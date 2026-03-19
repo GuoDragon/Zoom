@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/AndroidStudio/app/android_template/Tencent-Meeting/**)",
+      "Read(//d/AndroidStudio/app/android_template/Tencent-Meeting/app/**)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Bash(./gradlew :app:testDebugUnitTest)",
+      "Bash(./gradlew :app:testDebugUnitTest --stacktrace)",
+      "Bash(./gradlew :app:tasks --all)",
+      "Bash(./gradlew -q projects)"
+    ]
+  }
+}

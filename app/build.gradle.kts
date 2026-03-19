@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.test05"
+    namespace = "com.example.zoom"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "com.example.test05"
+        applicationId = "com.example.zoom"
         minSdk = 33
         targetSdk = 33
         versionCode = 1
