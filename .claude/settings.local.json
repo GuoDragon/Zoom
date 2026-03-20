@@ -8,7 +8,10 @@
       "Bash(./gradlew :app:testDebugUnitTest)",
       "Bash(./gradlew :app:testDebugUnitTest --stacktrace)",
       "Bash(./gradlew :app:tasks --all)",
-      "Bash(./gradlew -q projects)"
+      "Bash(./gradlew -q projects)",
+      "Bash(python -c \":*)",
+      "Bash(find D:AndroidStudioappandroid_templateZoom/app/src/main/assets -type f -name *.json)",
+      "Bash(./gradlew assembleDebug)"
     ]
   }
 }
