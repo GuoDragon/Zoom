@@ -14,11 +14,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
@@ -40,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Message
+import com.example.zoom.ui.components.TopBarEmojiAction
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 import java.text.SimpleDateFormat
@@ -50,7 +48,7 @@ import java.util.Locale
 fun TeamChatScreen(onAvatarClick: () -> Unit) {
     val chats = remember { mutableStateListOf<Message>() }
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("All", "Mentions", "Chats", "Channels", "Meeting Chats", "Shared Spaces")
+    val tabs = listOf("All", "Mentions", "Chats", "Channels", "Meeting Chats", "Shared Spaces", "More")
 
     val view = remember {
         object : TeamChatContract.View {
@@ -66,13 +64,22 @@ fun TeamChatScreen(onAvatarClick: () -> Unit) {
     }
 
     Scaffold(
-        topBar = { ZoomTopBar(title = "Team Chat", onAvatarClick = onAvatarClick) },
+        topBar = {
+            ZoomTopBar(
+                title = "Team Chat",
+                onAvatarClick = onAvatarClick,
+                actions = {
+                    TopBarEmojiAction(emoji = "🔍", contentDescription = "Search")
+                    TopBarEmojiAction(emoji = "⋯", contentDescription = "More")
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { },
                 containerColor = ZoomBlue
             ) {
-                Icon(Icons.Default.Edit, contentDescription = "New Chat", tint = Color.White)
+                Text(text = "✏️", color = Color.White, fontSize = 18.sp)
             }
         }
     ) { padding ->

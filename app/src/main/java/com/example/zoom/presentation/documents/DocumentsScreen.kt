@@ -6,11 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
@@ -27,13 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.ui.components.TopBarEmojiAction
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 
 @Composable
 fun DocumentsScreen(onAvatarClick: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Recent", "Starred", "My Documents", "Shared Folders")
+    val tabs = listOf("Recent", "Started", "My docs", "Shared folders", "Shared with me", "Trash")
     var isEmpty by remember { mutableStateOf(false) }
 
     val view = remember {
@@ -49,13 +46,22 @@ fun DocumentsScreen(onAvatarClick: () -> Unit) {
     }
 
     Scaffold(
-        topBar = { ZoomTopBar(title = "Documents", onAvatarClick = onAvatarClick) },
+        topBar = {
+            ZoomTopBar(
+                title = "Docs",
+                onAvatarClick = onAvatarClick,
+                actions = {
+                    TopBarEmojiAction(emoji = "🔍", contentDescription = "Search")
+                    TopBarEmojiAction(emoji = "🔔", contentDescription = "Notifications")
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { },
                 containerColor = ZoomBlue
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New Document", tint = Color.White)
+                Text(text = "＋", color = Color.White, fontSize = 24.sp)
             }
         }
     ) { padding ->
@@ -81,20 +87,9 @@ fun DocumentsScreen(onAvatarClick: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Description,
-                            contentDescription = null,
-                            modifier = Modifier.height(64.dp),
-                            tint = Color.LightGray
-                        )
+                        Text(text = "📄", fontSize = 40.sp)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("No documents yet", fontSize = 16.sp, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Create or share documents to get started",
-                            fontSize = 14.sp,
-                            color = Color.LightGray
-                        )
+                        Text("There are no files here yet", fontSize = 16.sp, color = Color.Gray)
                     }
                 }
             }

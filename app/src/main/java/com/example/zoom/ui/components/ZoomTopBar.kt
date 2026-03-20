@@ -1,15 +1,13 @@
 package com.example.zoom.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -19,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,7 +29,11 @@ import com.example.zoom.ui.theme.ZoomGreen
 @Composable
 fun ZoomTopBar(
     title: String,
-    onAvatarClick: () -> Unit
+    onAvatarClick: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {
+        TopBarEmojiAction(emoji = "🔍", contentDescription = "Search")
+        TopBarEmojiAction(emoji = "⋯", contentDescription = "More")
+    }
 ) {
     val currentUser = DataRepository.getCurrentUser()
     val initial = currentUser.username.first().uppercase()
@@ -59,16 +63,30 @@ fun ZoomTopBar(
                 )
             }
         },
-        actions = {
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.Search, contentDescription = "Search")
-            }
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More")
-            }
-        },
+        actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.White
         )
     )
+}
+
+@Composable
+fun RowScope.TopBarEmojiAction(
+    emoji: String,
+    contentDescription: String,
+    onClick: () -> Unit = {}
+) {
+    IconButton(onClick = onClick) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFF7F8FA))
+                .border(width = 1.dp, color = Color(0xFFE7EAF0), shape = CircleShape)
+                .semantics { this.contentDescription = contentDescription },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = emoji, fontSize = 14.sp)
+        }
+    }
 }
