@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -34,14 +35,15 @@ import com.example.zoom.navigation.ZoomNavGraph
 import com.example.zoom.ui.theme.ZoomBlue
 import com.example.zoom.ui.theme.ZoomTheme
 
-private data class NavItem(val label: String, val icon: ImageVector, val screen: Screen)
+private data class NavItem(val label: String, val icon: ImageVector, val screen: Screen?)
 
 private val navItems = listOf(
     NavItem("Home", Icons.Default.Videocam, Screen.Home),
     NavItem("Team Chat", Icons.Default.Forum, Screen.TeamChat),
-    NavItem("Documents", Icons.Default.Description, Screen.Documents),
+    NavItem("Docs", Icons.Default.Description, Screen.Documents),
     NavItem("Calendar", Icons.Default.CalendarMonth, Screen.Calendar),
-    NavItem("Mail", Icons.Default.Email, Screen.Mail)
+    NavItem("Mail", Icons.Default.Email, Screen.Mail),
+    NavItem("More", Icons.Default.MoreHoriz, null)
 )
 
 class MainActivity : ComponentActivity() {
@@ -68,13 +70,15 @@ fun ZoomApp() {
             NavigationBar(containerColor = Color.White) {
                 navItems.forEachIndexed { index, item ->
                     NavigationBarItem(
-                        selected = selectedIndex == index,
+                        selected = item.screen != null && selectedIndex == index,
                         onClick = {
-                            selectedIndex = index
-                            navController.navigate(item.screen.route) {
-                                popUpTo(Screen.Home.route) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            item.screen?.let { target ->
+                                selectedIndex = index
+                                navController.navigate(target.route) {
+                                    popUpTo(Screen.Home.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         },
                         icon = { Icon(item.icon, contentDescription = item.label) },
