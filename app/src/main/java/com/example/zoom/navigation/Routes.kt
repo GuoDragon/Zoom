@@ -9,4 +9,7 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object DetailedInfo : Screen("detailed_info")
     object Settings : Screen("settings")
+    object HostMeeting : Screen("host_meeting")
+    object JoinMeeting : Screen("join_meeting")
+    object ScheduleMeeting : Screen("schedule_meeting")
 }

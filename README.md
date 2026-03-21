@@ -2,6 +2,16 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-21 Home Subpages)
+
+Implemented the latest Home page tree expansion task from the requirements document:
+
+1. Added `Host Meeting`, `Join Meeting`, and `Schedule Meeting` as separate pages under the Home flow.
+2. Added `Share` as an in-place overlay on top of Home instead of a separate full-screen route.
+3. Wired the four Home action buttons to the new child interfaces.
+4. Kept all newly added meeting pages as static or local-state UI only, without real meeting creation, joining, or sharing logic.
+5. Updated the meeting subpages so their top titles are centered, and removed the custom keyboard from `Join Meeting`.
+
 ## Latest Update (2026-03-21)
 
 Implemented the latest profile expansion task from the requirements document:
