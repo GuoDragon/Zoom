@@ -1,28 +1,20 @@
 package com.example.zoom.presentation.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.EmojiEmotions
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -33,20 +25,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.User
+import com.example.zoom.ui.components.ProfileCard
+import com.example.zoom.ui.components.ProfileCardDivider
+import com.example.zoom.ui.components.ProfileIdentityHeader
+import com.example.zoom.ui.components.ProfileListRow
+import com.example.zoom.ui.components.ProfilePageBackground
+import com.example.zoom.ui.components.ZoomTopBarInsets
 import com.example.zoom.ui.theme.ZoomGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBackClick: () -> Unit) {
+fun ProfileScreen(
+    onBackClick: () -> Unit,
+    onDetailedInfoClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
     val currentUser = remember { mutableStateOf<User?>(null) }
 
     val view = remember {
@@ -56,6 +57,7 @@ fun ProfileScreen(onBackClick: () -> Unit) {
             }
         }
     }
+
     LaunchedEffect(Unit) {
         ProfilePresenter(view).loadData()
     }
@@ -69,6 +71,7 @@ fun ProfileScreen(onBackClick: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                windowInsets = ZoomTopBarInsets,
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
@@ -77,43 +80,90 @@ fun ProfileScreen(onBackClick: () -> Unit) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(padding)
             ) {
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(ZoomGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            user.username.first().uppercase(),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp
+                    ProfilePageBackground(modifier = Modifier.fillParentMaxWidth()) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        ProfileIdentityHeader(
+                            name = user.username,
+                            email = user.email,
+                            showBasicBadge = true
                         )
+                        Spacer(modifier = Modifier.height(22.dp))
+                        OfferCard()
+                        Spacer(modifier = Modifier.height(20.dp))
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(user.username, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(user.email ?: "", fontSize = 14.sp, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                 }
-                val menuItems = listOf(
-                    Triple(Icons.Default.Circle, "Availability", "Available"),
-                    Triple(Icons.Default.EmojiEmotions, "Status", "Set a status"),
-                    Triple(Icons.Default.Notifications, "Notifications", ""),
-                    Triple(Icons.Default.Settings, "Settings", ""),
-                    Triple(Icons.AutoMirrored.Filled.ExitToApp, "Sign Out", "")
-                )
 
-                items(menuItems) { (icon, title, subtitle) ->
-                    ProfileMenuItem(icon = icon, title = title, subtitle = subtitle)
-                    HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
+                item {
+                    ProfilePageBackground(modifier = Modifier.fillParentMaxWidth()) {
+                        val statusRows = listOf(
+                            ProfileMenuRow(
+                                icon = Icons.Default.CheckCircle,
+                                title = "Availability",
+                                trailing = "Available",
+                                tint = ZoomGreen
+                            ),
+                            ProfileMenuRow(
+                                icon = Icons.Default.EmojiEmotions,
+                                title = "Status",
+                                trailing = "What is your status?"
+                            ),
+                            ProfileMenuRow(
+                                icon = Icons.Default.Circle,
+                                title = "Work location",
+                                trailing = "Not set"
+                            )
+                        )
+
+                        ProfileCard {
+                            statusRows.forEachIndexed { index, item ->
+                                ProfileListRow(
+                                    title = item.title,
+                                    leadingIcon = item.icon,
+                                    iconTint = item.tint,
+                                    trailingText = item.trailing
+                                )
+                                if (index != statusRows.lastIndex) {
+                                    ProfileCardDivider()
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(18.dp))
+                    }
+                }
+
+                item {
+                    ProfilePageBackground(modifier = Modifier.fillParentMaxWidth()) {
+                        val menuRows = listOf(
+                            ProfileMenuRow(
+                                icon = Icons.Default.PersonOutline,
+                                title = "My profile",
+                                onClick = onDetailedInfoClick
+                            ),
+                            ProfileMenuRow(
+                                icon = Icons.Default.Settings,
+                                title = "Settings",
+                                onClick = onSettingsClick
+                            )
+                        )
+
+                        ProfileCard {
+                            menuRows.forEachIndexed { index, item ->
+                                ProfileListRow(
+                                    title = item.title,
+                                    leadingIcon = item.icon,
+                                    iconTint = item.tint,
+                                    onClick = item.onClick
+                                )
+                                if (index != menuRows.lastIndex) {
+                                    ProfileCardDivider()
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(28.dp))
+                    }
                 }
             }
         }
@@ -121,25 +171,37 @@ fun ProfileScreen(onBackClick: () -> Unit) {
 }
 
 @Composable
-private fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = title,
-            modifier = Modifier.size(24.dp),
-            tint = if (title == "Availability") ZoomGreen else Color.Gray
+private fun OfferCard() {
+    ProfileCard {
+        Text(
+            text = "FREE TRIAL OFFER",
+            color = Color.White,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .padding(start = 16.dp, top = 14.dp)
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFF7C3AED), Color(0xFF39B980))
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(horizontal = 10.dp, vertical = 4.dp)
         )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(title, fontSize = 15.sp)
-            if (subtitle.isNotEmpty()) {
-                Text(subtitle, fontSize = 13.sp, color = Color.Gray)
-            }
-        }
+        Text(
+            text = "Unlock longer meetings and AI Companion with a Workplace Pro trial for up to 14 days. Get started",
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            color = Color(0xFF465466),
+            fontSize = 15.sp,
+            lineHeight = 20.sp
+        )
     }
 }
+
+private data class ProfileMenuRow(
+    val icon: ImageVector,
+    val title: String,
+    val trailing: String? = null,
+    val tint: Color = Color(0xFF6F7886),
+    val onClick: (() -> Unit)? = null
+)

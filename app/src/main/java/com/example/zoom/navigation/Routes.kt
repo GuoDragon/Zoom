@@ -7,4 +7,6 @@ sealed class Screen(val route: String) {
     object Calendar : Screen("calendar")
     object Mail : Screen("mail")
     object Profile : Screen("profile")
+    object DetailedInfo : Screen("detailed_info")
+    object Settings : Screen("settings")
 }
