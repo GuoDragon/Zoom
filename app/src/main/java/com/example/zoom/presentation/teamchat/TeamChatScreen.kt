@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Message
-import com.example.zoom.ui.components.TopBarEmojiAction
+import com.example.zoom.ui.components.TopBarIconAction
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 import java.text.SimpleDateFormat
@@ -45,16 +48,19 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun TeamChatScreen(onAvatarClick: () -> Unit) {
-    val chats = remember { mutableStateListOf<Message>() }
+fun TeamChatScreen(
+    onAvatarClick: () -> Unit,
+    onSearchClick: () -> Unit
+) {
+    val chatItems = remember { mutableStateListOf<Message>() }
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("All", "Mentions", "Chats", "Channels", "Meeting Chats", "Shared Spaces", "More")
 
     val view = remember {
         object : TeamChatContract.View {
-            override fun showChatList(list: List<Message>) {
-                chats.clear()
-                chats.addAll(list)
+            override fun showChatList(chats: List<Message>) {
+                chatItems.clear()
+                chatItems.addAll(chats)
             }
         }
     }
@@ -69,8 +75,15 @@ fun TeamChatScreen(onAvatarClick: () -> Unit) {
                 title = "Team Chat",
                 onAvatarClick = onAvatarClick,
                 actions = {
-                    TopBarEmojiAction(emoji = "🔍", contentDescription = "Search")
-                    TopBarEmojiAction(emoji = "⋯", contentDescription = "More")
+                    TopBarIconAction(
+                        icon = Icons.Default.Search,
+                        contentDescription = "Search",
+                        onClick = onSearchClick
+                    )
+                    TopBarIconAction(
+                        icon = Icons.Default.MoreHoriz,
+                        contentDescription = "More"
+                    )
                 }
             )
         },
@@ -79,11 +92,20 @@ fun TeamChatScreen(onAvatarClick: () -> Unit) {
                 onClick = { },
                 containerColor = ZoomBlue
             ) {
-                Text(text = "✏️", color = Color.White, fontSize = 18.sp)
+                Text(
+                    text = "+",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             ScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 edgePadding = 16.dp,
@@ -100,7 +122,7 @@ fun TeamChatScreen(onAvatarClick: () -> Unit) {
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(chats) { chat ->
+                items(chatItems) { chat ->
                     ChatItem(chat)
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                 }
@@ -126,7 +148,7 @@ private fun ChatItem(message: Message) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                message.senderName.first().uppercase(),
+                text = message.senderName.first().uppercase(),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -138,20 +160,20 @@ private fun ChatItem(message: Message) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    message.senderName,
+                    text = message.senderName,
                     fontWeight = FontWeight.Medium,
                     fontSize = 15.sp,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    sdf.format(Date(message.timestamp)),
+                    text = sdf.format(Date(message.timestamp)),
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                message.content,
+                text = message.content,
                 fontSize = 13.sp,
                 color = Color.Gray,
                 maxLines = 1,

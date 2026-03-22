@@ -56,4 +56,43 @@ object DataRepository {
     }
 
     fun getUserById(userId: String): User? = users.find { it.userId == userId }
+
+    fun searchMessages(query: String): List<Message> {
+        if (query.isBlank()) return emptyList()
+        val q = query.lowercase()
+        return messages.filter {
+            it.content.lowercase().contains(q) || it.senderName.lowercase().contains(q)
+        }
+    }
+
+    fun searchMeetings(query: String): List<Meeting> {
+        if (query.isBlank()) return emptyList()
+        val q = query.lowercase()
+        return meetings.filter { it.topic.lowercase().contains(q) }
+    }
+
+    fun searchUsers(query: String): List<User> {
+        if (query.isBlank()) return emptyList()
+        val q = query.lowercase()
+        return users.filter {
+            it.username.lowercase().contains(q) ||
+                    (it.email?.lowercase()?.contains(q) == true)
+        }
+    }
+
+    fun searchChats(query: String): List<Message> {
+        if (query.isBlank()) return emptyList()
+        val q = query.lowercase()
+        val chatList = getChatList()
+        return chatList.filter { msg ->
+            val meeting = meetings.find { it.meetingId == msg.meetingId }
+            meeting?.topic?.lowercase()?.contains(q) == true ||
+                    msg.content.lowercase().contains(q)
+        }
+    }
+
+    fun getMeetingById(meetingId: String): Meeting? = meetings.find { it.meetingId == meetingId }
+
+    fun getMessagesByMeetingId(meetingId: String): List<Message> =
+        messages.filter { it.meetingId == meetingId }.sortedBy { it.timestamp }
 }

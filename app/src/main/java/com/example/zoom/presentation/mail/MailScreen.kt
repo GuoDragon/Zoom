@@ -34,7 +34,10 @@ import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 
 @Composable
-fun MailScreen(onAvatarClick: () -> Unit) {
+fun MailScreen(
+    onAvatarClick: () -> Unit,
+    onSearchClick: () -> Unit
+) {
     var showWelcome by remember { mutableStateOf(false) }
 
     val view = remember {
@@ -50,7 +53,13 @@ fun MailScreen(onAvatarClick: () -> Unit) {
     }
 
     Scaffold(
-        topBar = { ZoomTopBar(title = "Mail", onAvatarClick = onAvatarClick) }
+        topBar = {
+            ZoomTopBar(
+                title = "Mail",
+                onAvatarClick = onAvatarClick,
+                onSearchClick = onSearchClick
+            )
+        }
     ) { padding ->
         if (showWelcome) {
             Column(

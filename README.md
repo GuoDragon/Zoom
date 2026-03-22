@@ -2,6 +2,28 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-22 Search Results & Detail Pages)
+
+Implemented search functionality and detail pages for the Search screen:
+
+1. Added search methods to `DataRepository` for messages, meetings, users, and chats filtering.
+2. Extended `SearchUiState` with result data classes (`MessageResult`, `MeetingResult`, `ContactResult`, `ChatResult`).
+3. Updated Search MVP with `search(query)` method that filters data and formats timestamps.
+4. Search screen now conditionally renders: empty state when no query, tab-specific results when searching.
+5. Created `SearchResultContent.kt` with composables for each tab's result list (Top Results, Messages, Chats, Meetings, Contacts, and empty results for Files/Docs/Whiteboards/Mail).
+6. Added 3 detail pages with full MVP pattern: Message Detail (chat bubble view), Chat Detail (chat bubble view), Meeting Detail (info card + participant list).
+7. Registered 3 new parameterized routes (`search_message_detail/{meetingId}`, `search_chat_detail/{meetingId}`, `search_meeting_detail/{meetingId}`) in NavGraph.
+
+## Previous Update (2026-03-21 Search Page)
+
+Implemented the latest search entry task from the requirements document:
+
+1. Added a new `Search` page to the page tree and navigation graph.
+2. Wired the top-right search action on `Home`, `Team Chat`, `Docs`, `Calendar`, and `Mail` to open the shared search page.
+3. Built the search screen with a search box, `Cancel` action, 9 searchable category tabs, and empty-state guidance text.
+4. Added `Date` and `Type` filter chips with bottom-sheet selection panels based on the provided references.
+5. Replaced the touched search-entry top-bar actions with standard Material icons to avoid the earlier emoji text encoding issues.
+
 ## Latest Update (2026-03-21 Home Subpages)
 
 Implemented the latest Home page tree expansion task from the requirements document:

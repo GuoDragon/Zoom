@@ -38,8 +38,13 @@ val ZoomTopBarInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
 fun ZoomTopBar(
     title: String,
     onAvatarClick: () -> Unit,
+    onSearchClick: () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {
-        TopBarIconAction(icon = Icons.Default.Search, contentDescription = "Search")
+        TopBarIconAction(
+            icon = Icons.Default.Search,
+            contentDescription = "Search",
+            onClick = onSearchClick
+        )
         TopBarIconAction(icon = Icons.Default.MoreHoriz, contentDescription = "More")
     }
 ) {

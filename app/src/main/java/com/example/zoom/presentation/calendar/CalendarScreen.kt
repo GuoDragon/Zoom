@@ -19,9 +19,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,7 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Meeting
-import com.example.zoom.ui.components.TopBarEmojiAction
+import com.example.zoom.ui.components.TopBarIconAction
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 import java.text.SimpleDateFormat
@@ -54,8 +58,11 @@ private enum class CalendarViewMode {
 }
 
 @Composable
-fun CalendarScreen(onAvatarClick: () -> Unit) {
-    val meetings = remember { mutableStateListOf<Meeting>() }
+fun CalendarScreen(
+    onAvatarClick: () -> Unit,
+    onSearchClick: () -> Unit
+) {
+    val meetingItems = remember { mutableStateListOf<Meeting>() }
     var isEmpty by remember { mutableStateOf(false) }
     var selectedDay by remember { mutableIntStateOf(0) }
     var viewMode by remember { mutableStateOf(CalendarViewMode.Weekly) }
@@ -70,14 +77,15 @@ fun CalendarScreen(onAvatarClick: () -> Unit) {
 
     val view = remember {
         object : CalendarContract.View {
-            override fun showMeetings(list: List<Meeting>) {
+            override fun showMeetings(meetings: List<Meeting>) {
                 isEmpty = false
-                meetings.clear()
-                meetings.addAll(list)
+                meetingItems.clear()
+                meetingItems.addAll(meetings)
             }
+
             override fun showEmpty() {
                 isEmpty = true
-                meetings.clear()
+                meetingItems.clear()
             }
         }
     }
@@ -92,7 +100,11 @@ fun CalendarScreen(onAvatarClick: () -> Unit) {
                 title = "Calendar",
                 onAvatarClick = onAvatarClick,
                 actions = {
-                    TopBarEmojiAction(emoji = "🔍", contentDescription = "Search")
+                    TopBarIconAction(
+                        icon = Icons.Default.Search,
+                        contentDescription = "Search",
+                        onClick = onSearchClick
+                    )
                 }
             )
         },
@@ -101,7 +113,12 @@ fun CalendarScreen(onAvatarClick: () -> Unit) {
                 onClick = { },
                 containerColor = ZoomBlue
             ) {
-                Text(text = "＋", color = Color.White, fontSize = 24.sp)
+                Text(
+                    text = "+",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     ) { padding ->
@@ -127,9 +144,9 @@ fun CalendarScreen(onAvatarClick: () -> Unit) {
             if (isEmpty) {
                 EmptyCalendarState()
             } else if (viewMode == CalendarViewMode.Agenda) {
-                AgendaMeetingList(meetings = meetings)
+                AgendaMeetingList(meetings = meetingItems)
             } else {
-                WeeklyMeetingList(meetings = meetings)
+                WeeklyMeetingList(meetings = meetingItems)
             }
         }
     }
@@ -152,19 +169,24 @@ private fun CalendarFunctionBar(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "☰", fontSize = 20.sp, color = Color(0xFF444444))
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = null,
+                tint = Color(0xFF444444),
+                modifier = Modifier.size(22.dp)
+            )
             Spacer(modifier = Modifier.width(10.dp))
             Text(text = monthLabel, fontSize = 24.sp, fontWeight = FontWeight.Medium)
         }
 
         ViewModeButton(
-            emoji = "📅",
+            label = "W",
             selected = viewMode == CalendarViewMode.Weekly,
             onClick = onWeeklyClick
         )
         Spacer(modifier = Modifier.width(8.dp))
         ViewModeButton(
-            emoji = "📋",
+            label = "A",
             selected = viewMode == CalendarViewMode.Agenda,
             onClick = onAgendaClick
         )
@@ -173,7 +195,7 @@ private fun CalendarFunctionBar(
 
 @Composable
 private fun ViewModeButton(
-    emoji: String,
+    label: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -185,7 +207,12 @@ private fun ViewModeButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = emoji, fontSize = 16.sp)
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (selected) ZoomBlue else Color(0xFF5E6B85)
+        )
     }
 }
 
@@ -211,7 +238,7 @@ private fun WeekDaySelector(
                     .clickable { onDayClick(index) }
             ) {
                 Text(
-                    dayNames[cal.get(Calendar.DAY_OF_WEEK) - 1],
+                    text = dayNames[cal.get(Calendar.DAY_OF_WEEK) - 1],
                     fontSize = 12.sp,
                     color = if (isSelected) ZoomBlue else Color.Gray
                 )
@@ -224,7 +251,7 @@ private fun WeekDaySelector(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "${cal.get(Calendar.DAY_OF_MONTH)}",
+                        text = "${cal.get(Calendar.DAY_OF_MONTH)}",
                         fontWeight = FontWeight.Bold,
                         color = if (isSelected) Color.White else Color.Black
                     )
@@ -244,7 +271,20 @@ private fun EmptyCalendarState() {
             modifier = Modifier.padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "🗓️", fontSize = 72.sp)
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF3F5F8)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    tint = Color(0xFF98A5B5),
+                    modifier = Modifier.size(44.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "You haven't connected your calendar yet. Connect now to manage all your meetings and events in one place.",
@@ -253,7 +293,7 @@ private fun EmptyCalendarState() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "🔗 Connect calendar",
+                text = "Connect calendar",
                 fontSize = 22.sp,
                 color = ZoomBlue
             )
@@ -286,10 +326,10 @@ private fun WeeklyMeetingList(meetings: List<Meeting>) {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text(meeting.topic, fontWeight = FontWeight.Medium, fontSize = 15.sp)
+                        Text(text = meeting.topic, fontWeight = FontWeight.Medium, fontSize = 15.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            timeFormatter.format(Date(meeting.startTime)) +
+                            text = timeFormatter.format(Date(meeting.startTime)) +
                                 if (meeting.endTime != null) {
                                     " - ${timeFormatter.format(Date(meeting.endTime))}"
                                 } else {
@@ -329,7 +369,7 @@ private fun AgendaMeetingList(meetings: List<Meeting>) {
                     Text(text = meeting.topic, fontWeight = FontWeight.Medium, fontSize = 15.sp)
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "🕒 " + timeFormatter.format(Date(meeting.startTime)) +
+                        text = "Time: " + timeFormatter.format(Date(meeting.startTime)) +
                             if (meeting.endTime != null) {
                                 " - ${timeFormatter.format(Date(meeting.endTime))}"
                             } else {

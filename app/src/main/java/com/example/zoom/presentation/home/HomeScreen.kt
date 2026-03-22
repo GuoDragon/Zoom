@@ -48,6 +48,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     onAvatarClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onHostMeetingClick: () -> Unit,
     onJoinMeetingClick: () -> Unit,
     onScheduleMeetingClick: () -> Unit
@@ -70,7 +71,13 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = { ZoomTopBar(title = "Zoom", onAvatarClick = onAvatarClick) }
+        topBar = {
+            ZoomTopBar(
+                title = "Zoom",
+                onAvatarClick = onAvatarClick,
+                onSearchClick = onSearchClick
+            )
+        }
     ) { padding ->
         Box(
             modifier = Modifier
