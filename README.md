@@ -2,6 +2,24 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-23 Meeting UI Polish)
+
+Refined the newest meeting-related pages and menu positioning:
+
+1. The `More` menu card now sits much closer to the top-right trigger button on supported pages.
+2. The `Meeting Preview` speaker icon now opens a local audio-choice popup with `Wi‑Fi or cellular data` and `No audio`.
+3. The extra dark rounded block behind `Leave the Meeting` was removed so the page reads more like the provided reference.
+
+## Latest Update (2026-03-23 Meeting Preview & More Menu)
+
+Added the latest page-tree expansion from the requirements document:
+
+1. Starting a meeting from `Host Meeting` now opens a dedicated `Meeting Preview` page instead of stopping on the setup page.
+2. The new preview page shows local microphone, camera, speaker, and preview-toggle UI based on the provided reference.
+3. Leaving from the preview page now opens a separate `Leave the Meeting` confirmation page.
+4. The top-right `More` button on `Home` and `Team Chat` now shows a floating `More Page` style menu with static actions matching the current reference direction.
+5. These new child pages continue to behave as standalone pages without the bottom navigation bar.
+
 ## Latest Update (2026-03-23 Fullscreen Search & Meeting Subpages)
 
 Adjusted page presentation so search and meeting-related child pages open as standalone screens without the bottom navigation bar:

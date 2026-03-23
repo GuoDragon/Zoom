@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Meeting
+import com.example.zoom.ui.components.MoreMenuItemUiState
+import com.example.zoom.ui.components.MoreMenuOverlay
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 import com.example.zoom.ui.theme.ZoomOrange
@@ -55,6 +57,14 @@ fun HomeScreen(
 ) {
     val upcomingMeetings = remember { mutableStateListOf<Meeting>() }
     var showShareOverlay by remember { mutableStateOf(false) }
+    var showMoreOverlay by remember { mutableStateOf(false) }
+    val moreMenuItems = remember {
+        listOf(
+            MoreMenuItemUiState("Meet with Personal ID", "ID"),
+            MoreMenuItemUiState("Scan QR code", "QR"),
+            MoreMenuItemUiState("Transfer a meeting", "TR")
+        )
+    }
 
     val view = remember {
         object : HomeContract.View {
@@ -75,7 +85,8 @@ fun HomeScreen(
             ZoomTopBar(
                 title = "Zoom",
                 onAvatarClick = onAvatarClick,
-                onSearchClick = onSearchClick
+                onSearchClick = onSearchClick,
+                onMoreClick = { showMoreOverlay = true }
             )
         }
     ) { padding ->
@@ -153,6 +164,14 @@ fun HomeScreen(
 
             if (showShareOverlay) {
                 ShareScreenOverlay(onDismiss = { showShareOverlay = false })
+            }
+
+            if (showMoreOverlay) {
+                MoreMenuOverlay(
+                    items = moreMenuItems,
+                    footerText = "Add a calendar",
+                    onDismiss = { showMoreOverlay = false }
+                )
             }
         }
     }

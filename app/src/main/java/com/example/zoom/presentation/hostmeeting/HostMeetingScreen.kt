@@ -22,7 +22,10 @@ import com.example.zoom.ui.components.ZoomPrimaryActionButton
 import com.example.zoom.ui.components.ZoomSettingSwitchRow
 
 @Composable
-fun HostMeetingScreen(onBackClick: () -> Unit) {
+fun HostMeetingScreen(
+    onBackClick: () -> Unit,
+    onStartMeetingClick: () -> Unit
+) {
     var uiState by remember { mutableStateOf<HostMeetingUiState?>(null) }
 
     val view = remember {
@@ -70,7 +73,7 @@ fun HostMeetingScreen(onBackClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(28.dp))
                 ZoomPrimaryActionButton(
                     text = "Start a meeting",
-                    onClick = {},
+                    onClick = onStartMeetingClick,
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }

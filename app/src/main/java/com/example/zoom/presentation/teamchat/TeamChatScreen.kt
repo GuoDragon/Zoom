@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Message
+import com.example.zoom.ui.components.MoreMenuItemUiState
+import com.example.zoom.ui.components.MoreMenuOverlay
 import com.example.zoom.ui.components.TopBarIconAction
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
@@ -54,7 +57,15 @@ fun TeamChatScreen(
 ) {
     val chatItems = remember { mutableStateListOf<Message>() }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showMoreOverlay by remember { mutableStateOf(false) }
     val tabs = listOf("All", "Mentions", "Chats", "Channels", "Meeting Chats", "Shared Spaces", "More")
+    val moreMenuItems = remember {
+        listOf(
+            MoreMenuItemUiState("Meet with Personal ID", "ID"),
+            MoreMenuItemUiState("Scan QR code", "QR"),
+            MoreMenuItemUiState("Transfer a meeting", "TR")
+        )
+    }
 
     val view = remember {
         object : TeamChatContract.View {
@@ -82,7 +93,8 @@ fun TeamChatScreen(
                     )
                     TopBarIconAction(
                         icon = Icons.Default.MoreHoriz,
-                        contentDescription = "More"
+                        contentDescription = "More",
+                        onClick = { showMoreOverlay = true }
                     )
                 }
             )
@@ -126,6 +138,14 @@ fun TeamChatScreen(
                     ChatItem(chat)
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                 }
+            }
+
+            if (showMoreOverlay) {
+                MoreMenuOverlay(
+                    items = moreMenuItems,
+                    footerText = "Add a calendar",
+                    onDismiss = { showMoreOverlay = false }
+                )
             }
         }
     }

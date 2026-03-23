@@ -11,7 +11,9 @@ import com.example.zoom.presentation.documents.DocumentsScreen
 import com.example.zoom.presentation.home.HomeScreen
 import com.example.zoom.presentation.hostmeeting.HostMeetingScreen
 import com.example.zoom.presentation.joinmeeting.JoinMeetingScreen
+import com.example.zoom.presentation.leavemeeting.LeaveMeetingScreen
 import com.example.zoom.presentation.mail.MailScreen
+import com.example.zoom.presentation.meetingpreview.MeetingPreviewScreen
 import com.example.zoom.presentation.profile.ProfileScreen
 import com.example.zoom.presentation.schedulemeeting.ScheduleMeetingScreen
 import com.example.zoom.presentation.search.SearchScreen
@@ -62,7 +64,23 @@ fun ZoomNavGraph(
             SearchScreen(onBackClick = { navController.popBackStack() })
         }
         composable(Screen.HostMeeting.route) {
-            HostMeetingScreen(onBackClick = { navController.popBackStack() })
+            HostMeetingScreen(
+                onBackClick = { navController.popBackStack() },
+                onStartMeetingClick = { navController.navigate(Screen.MeetingPreview.route) }
+            )
+        }
+        composable(Screen.MeetingPreview.route) {
+            MeetingPreviewScreen(
+                onLeaveClick = { navController.navigate(Screen.LeaveMeeting.route) }
+            )
+        }
+        composable(Screen.LeaveMeeting.route) {
+            LeaveMeetingScreen(
+                onLeaveClick = {
+                    navController.popBackStack(Screen.HostMeeting.route, false)
+                },
+                onCancelClick = { navController.popBackStack() }
+            )
         }
         composable(Screen.JoinMeeting.route) {
             JoinMeetingScreen(onBackClick = { navController.popBackStack() })

@@ -39,13 +39,18 @@ fun ZoomTopBar(
     title: String,
     onAvatarClick: () -> Unit,
     onSearchClick: () -> Unit = {},
+    onMoreClick: () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {
         TopBarIconAction(
             icon = Icons.Default.Search,
             contentDescription = "Search",
             onClick = onSearchClick
         )
-        TopBarIconAction(icon = Icons.Default.MoreHoriz, contentDescription = "More")
+        TopBarIconAction(
+            icon = Icons.Default.MoreHoriz,
+            contentDescription = "More",
+            onClick = onMoreClick
+        )
     }
 ) {
     val currentUser = DataRepository.getCurrentUser()
