@@ -24,17 +24,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-data class MoreMenuItemUiState(
+data class ExpansionMenuItemUiState(
     val label: String,
     val trailingBadge: String
 )
 
 @Composable
-fun MoreMenuOverlay(
-    items: List<MoreMenuItemUiState>,
+fun ExpansionMenuOverlay(
+    items: List<ExpansionMenuItemUiState>,
     footerText: String,
     onDismiss: () -> Unit,
-    onItemClick: (MoreMenuItemUiState) -> Unit = {}
+    onItemClick: (ExpansionMenuItemUiState) -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -86,7 +86,7 @@ fun MoreMenuOverlay(
 
 @Composable
 private fun MoreMenuItemRow(
-    item: MoreMenuItemUiState,
+    item: ExpansionMenuItemUiState,
     onClick: () -> Unit
 ) {
     Row(

@@ -2,6 +2,15 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-23 More Page Correction)
+
+Corrected the page-tree mistake from the latest requirements update and completed the real `More Page`:
+
+1. The top-right three-dot popup is now treated as `Expansion Page`, matching the corrected page tree.
+2. The bottom-navigation `More Page` is now implemented as a popup sheet on top of the current first-level page instead of routing to a standalone screen.
+3. Tapping the rightmost `More` item on `Home`, `Team Chat`, `Docs`, `Calendar`, or `Mail` keeps the current page as the background and shows the shared shortcut-sheet content from the latest reference.
+4. The bottom bar now treats `More` as an overlay state instead of a route, while the top-right `Expansion Page` remains a separate menu pattern.
+
 ## Latest Update (2026-03-23 Meeting UI Polish)
 
 Refined the newest meeting-related pages and menu positioning:
@@ -10,14 +19,14 @@ Refined the newest meeting-related pages and menu positioning:
 2. The `Meeting Preview` speaker icon now opens a local audio-choice popup with `Wi‑Fi or cellular data` and `No audio`.
 3. The extra dark rounded block behind `Leave the Meeting` was removed so the page reads more like the provided reference.
 
-## Latest Update (2026-03-23 Meeting Preview & More Menu)
+## Latest Update (2026-03-23 Meeting Preview & Expansion Page)
 
 Added the latest page-tree expansion from the requirements document:
 
 1. Starting a meeting from `Host Meeting` now opens a dedicated `Meeting Preview` page instead of stopping on the setup page.
 2. The new preview page shows local microphone, camera, speaker, and preview-toggle UI based on the provided reference.
 3. Leaving from the preview page now opens a separate `Leave the Meeting` confirmation page.
-4. The top-right `More` button on `Home` and `Team Chat` now shows a floating `More Page` style menu with static actions matching the current reference direction.
+4. The top-right `More` button on `Home` and `Team Chat` now shows the floating `Expansion Page` menu with static actions matching the current reference direction.
 5. These new child pages continue to behave as standalone pages without the bottom navigation bar.
 
 ## Latest Update (2026-03-23 Fullscreen Search & Meeting Subpages)
@@ -128,5 +137,5 @@ Implemented the latest UI refinement tasks from the development requirements fil
 
 Implemented current bottom navigation refinements from the development requirements:
 
-1. Added `More` as the last item in the bottom navigation bar (no navigation target page).
+1. Added `More` as the last item in the bottom navigation bar and now use it to open the shared `More Page` popup sheet.
 2. Renamed the third bottom navigation item from `Documents` to `Docs`.

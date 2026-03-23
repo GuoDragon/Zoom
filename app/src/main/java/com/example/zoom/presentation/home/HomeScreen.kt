@@ -38,8 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Meeting
-import com.example.zoom.ui.components.MoreMenuItemUiState
-import com.example.zoom.ui.components.MoreMenuOverlay
+import com.example.zoom.ui.components.ExpansionMenuItemUiState
+import com.example.zoom.ui.components.ExpansionMenuOverlay
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 import com.example.zoom.ui.theme.ZoomOrange
@@ -58,11 +58,11 @@ fun HomeScreen(
     val upcomingMeetings = remember { mutableStateListOf<Meeting>() }
     var showShareOverlay by remember { mutableStateOf(false) }
     var showMoreOverlay by remember { mutableStateOf(false) }
-    val moreMenuItems = remember {
+    val expansionMenuItems = remember {
         listOf(
-            MoreMenuItemUiState("Meet with Personal ID", "ID"),
-            MoreMenuItemUiState("Scan QR code", "QR"),
-            MoreMenuItemUiState("Transfer a meeting", "TR")
+            ExpansionMenuItemUiState("Meet with Personal ID", "ID"),
+            ExpansionMenuItemUiState("Scan QR code", "QR"),
+            ExpansionMenuItemUiState("Transfer a meeting", "TR")
         )
     }
 
@@ -167,8 +167,8 @@ fun HomeScreen(
             }
 
             if (showMoreOverlay) {
-                MoreMenuOverlay(
-                    items = moreMenuItems,
+                ExpansionMenuOverlay(
+                    items = expansionMenuItems,
                     footerText = "Add a calendar",
                     onDismiss = { showMoreOverlay = false }
                 )

@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -19,8 +20,12 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -30,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.zoom.data.DataRepository
 import com.example.zoom.navigation.Screen
 import com.example.zoom.navigation.ZoomNavGraph
+import com.example.zoom.presentation.more.MorePageOverlay
 import com.example.zoom.ui.theme.ZoomBlue
 import com.example.zoom.ui.theme.ZoomTheme
 
@@ -71,6 +77,13 @@ fun ZoomApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomBarRoutes
+    var showMoreOverlay by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentRoute) {
+        if (currentRoute !in bottomBarRoutes) {
+            showMoreOverlay = false
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -78,14 +91,24 @@ fun ZoomApp() {
             if (showBottomBar) {
                 NavigationBar(containerColor = Color.White) {
                     navItems.forEach { item ->
+                        val isMoreItem = item.screen == null
                         NavigationBarItem(
-                            selected = item.screen?.route == currentRoute,
+                            selected = if (isMoreItem) {
+                                showMoreOverlay
+                            } else {
+                                !showMoreOverlay && item.screen?.route == currentRoute
+                            },
                             onClick = {
-                                item.screen?.let { target ->
-                                    navController.navigate(target.route) {
-                                        popUpTo(Screen.Home.route) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
+                                if (isMoreItem) {
+                                    showMoreOverlay = !showMoreOverlay
+                                } else {
+                                    showMoreOverlay = false
+                                    item.screen?.let { target ->
+                                        navController.navigate(target.route) {
+                                            popUpTo(Screen.Home.route) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
                                     }
                                 }
                             },
@@ -102,12 +125,22 @@ fun ZoomApp() {
             }
         }
     ) { innerPadding ->
-        ZoomNavGraph(
-            navController = navController,
-            modifier = Modifier.padding(innerPadding),
-            onAvatarClick = {
-                navController.navigate(Screen.Profile.route)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            ZoomNavGraph(
+                navController = navController,
+                modifier = Modifier.fillMaxSize(),
+                onAvatarClick = {
+                    navController.navigate(Screen.Profile.route)
+                }
+            )
+
+            if (showMoreOverlay && currentRoute in bottomBarRoutes) {
+                MorePageOverlay(onDismiss = { showMoreOverlay = false })
             }
-        )
+        }
     }
 }
