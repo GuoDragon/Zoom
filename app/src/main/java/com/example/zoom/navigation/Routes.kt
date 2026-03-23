@@ -13,16 +13,4 @@ sealed class Screen(val route: String) {
     object HostMeeting : Screen("host_meeting")
     object JoinMeeting : Screen("join_meeting")
     object ScheduleMeeting : Screen("schedule_meeting")
-
-    object SearchMessageDetail : Screen("search_message_detail/{meetingId}") {
-        fun createRoute(meetingId: String) = "search_message_detail/$meetingId"
-    }
-
-    object SearchChatDetail : Screen("search_chat_detail/{meetingId}") {
-        fun createRoute(meetingId: String) = "search_chat_detail/$meetingId"
-    }
-
-    object SearchMeetingDetail : Screen("search_meeting_detail/{meetingId}") {
-        fun createRoute(meetingId: String) = "search_meeting_detail/$meetingId"
-    }
 }

@@ -21,13 +21,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.zoom.data.DataRepository
 import com.example.zoom.navigation.Screen
@@ -46,6 +44,14 @@ private val navItems = listOf(
     NavItem("More", Icons.Default.MoreHoriz, null)
 )
 
+private val bottomBarRoutes = setOf(
+    Screen.Home.route,
+    Screen.TeamChat.route,
+    Screen.Documents.route,
+    Screen.Calendar.route,
+    Screen.Mail.route
+)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,33 +68,36 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ZoomApp() {
     val navController = rememberNavController()
-    var selectedIndex by remember { mutableIntStateOf(0) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute in bottomBarRoutes
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
-                navItems.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        selected = item.screen != null && selectedIndex == index,
-                        onClick = {
-                            item.screen?.let { target ->
-                                selectedIndex = index
-                                navController.navigate(target.route) {
-                                    popUpTo(Screen.Home.route) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+            if (showBottomBar) {
+                NavigationBar(containerColor = Color.White) {
+                    navItems.forEach { item ->
+                        NavigationBarItem(
+                            selected = item.screen?.route == currentRoute,
+                            onClick = {
+                                item.screen?.let { target ->
+                                    navController.navigate(target.route) {
+                                        popUpTo(Screen.Home.route) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
-                            }
-                        },
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label, fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = ZoomBlue,
-                            selectedTextColor = ZoomBlue,
-                            indicatorColor = Color.Transparent
+                            },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label, fontSize = 10.sp) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = ZoomBlue,
+                                selectedTextColor = ZoomBlue,
+                                indicatorColor = Color.Transparent
+                            )
                         )
-                    )
+                    }
                 }
             }
         }

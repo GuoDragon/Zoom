@@ -2,6 +2,27 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-23 Fullscreen Search & Meeting Subpages)
+
+Adjusted page presentation so search and meeting-related child pages open as standalone screens without the bottom navigation bar:
+
+1. The bottom navigation bar now appears only on the main sections: `Home`, `Team Chat`, `Docs`, `Calendar`, and `Mail`.
+2. `Search`, `Start a meeting`, `Join meeting`, and `Schedule meeting` now hide the bottom navigation bar and behave like full child pages.
+3. Returning from those child pages restores the bottom navigation bar with the correct selected main tab.
+4. The main bottom navigation selection is now derived from the current navigation route instead of a separate local index state.
+
+## Latest Update (2026-03-23 Search Page Rework)
+
+Reworked the shared Search flow so it now matches the latest requirement more closely:
+
+1. Search now stays inside one shared page reached from the top-right search action on the main pages.
+2. The 9 in-search categories are `Top results`, `Messages`, `Chats and channels`, `Meetings`, `Contacts`, `Files`, `Docs`, `Whiteboards`, and `Mail`.
+3. Each category now owns its own filter chip set and bottom-sheet options based on the provided `UIReference` screenshots instead of sharing one global `Date/Type` filter model.
+4. Search no longer routes into the old message/chat/meeting detail pages from the main Search experience; the category content itself is now the target experience.
+5. `Top results`, `Messages`, `Chats and channels`, `Meetings`, and `Contacts` still use the existing local asset data for search results.
+6. `Files`, `Docs`, and `Whiteboards` currently show static empty/search guidance states because no matching asset data exists yet, while `Mail` shows the expected local `Connect your Mail` placeholder state.
+7. Added searchable filter sheets, toggle chips for Mail (`Starred`, `Has attachment`), and kept the implementation in MVP-style classes with smaller split files.
+
 ## Latest Update (2026-03-22 Search Results & Detail Pages)
 
 Implemented search functionality and detail pages for the Search screen:

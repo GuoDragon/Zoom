@@ -7,6 +7,13 @@ interface SearchContract {
 
     interface Presenter {
         fun loadData()
-        fun search(query: String)
+        fun onQueryChanged(query: String)
+        fun onCategorySelected(category: SearchCategory)
+        fun onFilterChipClicked(filterId: String)
+        fun onSheetSearchChanged(query: String)
+        fun onSheetOptionSelected(groupIndex: Int, optionId: String)
+        fun onSheetReset()
+        fun onSheetDone()
+        fun onSheetDismiss()
     }
 }
