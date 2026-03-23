@@ -47,7 +47,8 @@ import com.example.zoom.ui.theme.ZoomBlue
 
 @Composable
 fun MeetingPreviewScreen(
-    onLeaveClick: () -> Unit
+    onLeaveClick: () -> Unit,
+    onStartClick: () -> Unit
 ) {
     var uiState by remember { mutableStateOf<MeetingPreviewUiState?>(null) }
 
@@ -194,7 +195,7 @@ fun MeetingPreviewScreen(
                 Spacer(modifier = Modifier.height(14.dp))
                 ZoomPrimaryActionButton(
                     text = "Start",
-                    onClick = {},
+                    onClick = onStartClick,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(12.dp))

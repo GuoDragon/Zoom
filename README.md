@@ -2,6 +2,15 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-23 Meeting Detailed Pages)
+
+Extended the Host Meeting flow with the newly added in-meeting pages from the updated page tree:
+
+1. Tapping `Start` on `Meeting Preview Page` now opens a dedicated `Meeting Detailed Page`.
+2. Added a separate `Leave the Meeting Detailed Page` that opens from the in-meeting `End` action.
+3. The earlier `LeaveMeetingScreen` is now the preview-stage leave confirmation (`Leave the Meeting Preview Page`), while the new detailed leave sheet is reserved for the in-meeting flow.
+4. Both new meeting pages stay static and local-state only, and continue to hide the app bottom navigation bar.
+
 ## Latest Update (2026-03-23 More Page Correction)
 
 Corrected the page-tree mistake from the latest requirements update and completed the real `More Page`:

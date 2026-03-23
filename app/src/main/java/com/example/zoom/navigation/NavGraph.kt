@@ -12,7 +12,9 @@ import com.example.zoom.presentation.home.HomeScreen
 import com.example.zoom.presentation.hostmeeting.HostMeetingScreen
 import com.example.zoom.presentation.joinmeeting.JoinMeetingScreen
 import com.example.zoom.presentation.leavemeeting.LeaveMeetingScreen
+import com.example.zoom.presentation.leavemeetingdetailed.LeaveMeetingDetailedScreen
 import com.example.zoom.presentation.mail.MailScreen
+import com.example.zoom.presentation.meetingdetailed.MeetingDetailedScreen
 import com.example.zoom.presentation.meetingpreview.MeetingPreviewScreen
 import com.example.zoom.presentation.profile.ProfileScreen
 import com.example.zoom.presentation.schedulemeeting.ScheduleMeetingScreen
@@ -71,11 +73,29 @@ fun ZoomNavGraph(
         }
         composable(Screen.MeetingPreview.route) {
             MeetingPreviewScreen(
-                onLeaveClick = { navController.navigate(Screen.LeaveMeeting.route) }
+                onLeaveClick = { navController.navigate(Screen.LeaveMeeting.route) },
+                onStartClick = { navController.navigate(Screen.MeetingDetailed.route) }
             )
         }
         composable(Screen.LeaveMeeting.route) {
             LeaveMeetingScreen(
+                onLeaveClick = {
+                    navController.popBackStack(Screen.HostMeeting.route, false)
+                },
+                onCancelClick = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.MeetingDetailed.route) {
+            MeetingDetailedScreen(
+                onBackClick = { navController.popBackStack() },
+                onEndClick = { navController.navigate(Screen.LeaveMeetingDetailed.route) }
+            )
+        }
+        composable(Screen.LeaveMeetingDetailed.route) {
+            LeaveMeetingDetailedScreen(
+                onEndForAllClick = {
+                    navController.popBackStack(Screen.HostMeeting.route, false)
+                },
                 onLeaveClick = {
                     navController.popBackStack(Screen.HostMeeting.route, false)
                 },
