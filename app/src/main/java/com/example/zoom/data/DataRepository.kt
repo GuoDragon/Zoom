@@ -95,4 +95,11 @@ object DataRepository {
 
     fun getMessagesByMeetingId(meetingId: String): List<Message> =
         messages.filter { it.meetingId == meetingId }.sortedBy { it.timestamp }
+
+    fun getCurrentMeeting(): Meeting = meetings.first { it.meetingId == "mtg016" }
+
+    fun getParticipantsForMeeting(meetingId: String): List<User> {
+        val meeting = getMeetingById(meetingId) ?: return emptyList()
+        return meeting.participantIds.mapNotNull { getUserById(it) }
+    }
 }

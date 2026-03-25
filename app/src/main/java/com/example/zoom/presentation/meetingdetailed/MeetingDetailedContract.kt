@@ -1,5 +1,7 @@
 package com.example.zoom.presentation.meetingdetailed
 
+import com.example.zoom.presentation.meetingspeakerdetailed.ParticipantUi
+
 interface MeetingDetailedContract {
     interface View {
         fun showContent(content: MeetingDetailedUiState)
@@ -14,18 +16,5 @@ data class MeetingDetailedUiState(
     val title: String,
     val participantInitials: String,
     val participantLabel: String,
-    val controls: List<MeetingControlUiState>
+    val participants: List<ParticipantUi> = emptyList()
 )
-
-data class MeetingControlUiState(
-    val label: String,
-    val action: MeetingControlAction
-)
-
-enum class MeetingControlAction {
-    Audio,
-    Video,
-    Chat,
-    More,
-    End
-}

@@ -2,6 +2,60 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-24 Meeting More Detailed Page — Raise Hand Style Tweak)
+
+Adjusted the white bottom-sheet emoji row to match the UI reference screenshot:
+
+1. Changed the Raise Hand button from a small circle + bottom label to a wide capsule shape (icon + text side-by-side) with `RoundedCornerShape(24.dp)`.
+2. Reduced quick emojis from 5 to 3 (`👍`, `👏`, `❤️`).
+
+### Modified files
+- `presentation/meetingmoredetailed/MeetingMoreDetailedPresenter.kt` — quickEmojis trimmed to 3
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt` — Raise Hand restyled as horizontal capsule
+
+## Latest Update (2026-03-24 Meeting More Detailed Page Polish)
+
+Refined the Meeting More Detailed Page (white bottom-sheet overlay) to match the latest UI reference:
+
+1. Added a "Raise Hand" (🖐) circular button with label as the first item in the quick emoji row, before the standard emoji buttons.
+2. Renamed "Show CC Notes" to "Show CC" in the grid.
+3. Added a new "Notes" grid item between "Show CC" and "Apps", bringing the grid total to 8 items.
+
+### Modified files
+- `presentation/meetingmoredetailed/MeetingMoreDetailedPresenter.kt` — renamed grid item, inserted "Notes"
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt` — added Raise Hand button in QuickEmojiRow, updated icon mapping
+
+## Latest Update (2026-03-24 Meeting Detailed Sub-Pages)
+
+Added 5 sub-pages under the Meeting Detailed Page to complete the in-meeting experience:
+
+1. **Meeting Chat Detailed Page** — full-screen chat with message bubbles, avatar/name for others, blue accent for self, emoji + text input bar with send. Navigated via Chat button in bottom bar.
+2. **Meeting More Detailed Page** — dark bottom-sheet overlay with 2-page `HorizontalPager` grid (8 items on page 1, 6 on page 2), page indicator dots, and close button. Tapping Security opens Meeting Info.
+3. **Meeting More and More Detailed Page** — second page of the More overlay with Live Streaming, Reactions, Raise Hand, Non-verbal Feedback, Poll, and Q&A (some grayed out).
+4. **Meeting Speaker Detailed Page** — speaker view mode toggle in top bar. Shows large active speaker tile with green border + horizontal thumbnail strip of other participants. Toggling returns to gallery view.
+5. **Meeting Info Detailed Page** — full-screen meeting information with topic, meeting ID, passcode, host, invite link (all copyable), end-to-end encryption badge, and Copy Invitation button.
+
+### New files (11)
+- `presentation/meetingchatdetailed/` — Contract, Presenter, Screen
+- `presentation/meetingmoredetailed/` — Contract, Presenter, Overlay
+- `presentation/meetingspeakerdetailed/` — Contract, Presenter
+- `presentation/meetinginfodetailed/` — Contract, Presenter, Screen
+
+### Modified files
+- `data/DataRepository.kt` — added `getCurrentMeeting()` and `getParticipantsForMeeting()`
+- `navigation/Routes.kt` — added `MeetingChatDetailed` and `MeetingInfoDetailed` routes
+- `navigation/NavGraph.kt` — added 2 composable entries, wired callbacks
+- `presentation/meetingdetailed/MeetingDetailedContract.kt` — expanded UiState with participants
+- `presentation/meetingdetailed/MeetingDetailedPresenter.kt` — loads participant data
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt` — added Chat/Info callbacks, More overlay, Speaker view toggle
+
+Refined the newly added in-meeting page to better match the latest requirement correction:
+
+1. The `Meeting Detailed Page` top title bar now sits directly under the system status bar instead of floating lower in the screen.
+2. The in-meeting microphone, camera, and speaker settings now stay aligned with the `Meeting Preview Page` when entering the meeting.
+3. The `Meeting Detailed Page` speaker button now uses the same two-option audio menu as `Meeting Preview Page`.
+4. The in-meeting microphone and camera controls now reuse the same active/inactive visual logic as the preview screen.
+
 ## Latest Update (2026-03-23 Meeting Detailed Pages)
 
 Extended the Host Meeting flow with the newly added in-meeting pages from the updated page tree:

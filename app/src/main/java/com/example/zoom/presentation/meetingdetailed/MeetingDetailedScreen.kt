@@ -1,16 +1,23 @@
 package com.example.zoom.presentation.meetingdetailed
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,9 +25,11 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloseFullscreen
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,16 +47,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.presentation.meetingmoredetailed.MeetingMoreDetailedOverlay
+import com.example.zoom.presentation.meetingspeakerdetailed.ParticipantUi
+import com.example.zoom.ui.components.MeetingAudioMenu
+import com.example.zoom.ui.components.MeetingAudioOption
+import com.example.zoom.ui.components.MeetingMediaToggleButton
+import com.example.zoom.ui.components.MeetingSessionConfig
+import com.example.zoom.ui.theme.ZoomBlue
 
 @Composable
 fun MeetingDetailedScreen(
-    onBackClick: () -> Unit,
-    onEndClick: () -> Unit
+    initialConfig: MeetingSessionConfig,
+    onMinimizeClick: () -> Unit,
+    onEndClick: () -> Unit,
+    onChatClick: () -> Unit = {},
+    onInfoClick: () -> Unit = {}
 ) {
     var uiState by remember { mutableStateOf<MeetingDetailedUiState?>(null) }
+    var showMoreOverlay by remember { mutableStateOf(false) }
+    var isSpeakerView by remember { mutableStateOf(false) }
 
     val view = remember {
         object : MeetingDetailedContract.View {
@@ -62,102 +84,274 @@ fun MeetingDetailedScreen(
     }
 
     uiState?.let { screenState ->
-        Scaffold(
-            containerColor = Color.Black,
-            bottomBar = {
-                MeetingControlBar(
-                    controls = screenState.controls,
-                    onEndClick = onEndClick
-                )
-            }
-        ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .padding(padding)
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    MeetingDetailedTopBar(
-                        title = screenState.title,
-                        onBackClick = onBackClick
-                    )
-                    TopStatusRow()
-                }
+        var microphoneOn by remember(initialConfig) { mutableStateOf(initialConfig.microphoneOn) }
+        var cameraOn by remember(initialConfig) { mutableStateOf(initialConfig.cameraOn) }
+        var selectedAudioOption by remember(initialConfig) { mutableStateOf(initialConfig.audioOption) }
+        var showAudioMenu by remember { mutableStateOf(false) }
 
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = Color.Black,
+                contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+                bottomBar = {
+                    MeetingControlBar(
+                        microphoneOn = microphoneOn,
+                        cameraOn = cameraOn,
+                        onMicrophoneClick = { microphoneOn = !microphoneOn },
+                        onCameraClick = { cameraOn = !cameraOn },
+                        onChatClick = onChatClick,
+                        onMoreClick = { showMoreOverlay = true },
+                        onEndClick = onEndClick
+                    )
+                }
+            ) { padding ->
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                        .padding(padding)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(124.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFF78A93A)),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        MeetingDetailedTopBar(
+                            title = screenState.title,
+                            showAudioMenu = showAudioMenu,
+                            selectedAudioOption = selectedAudioOption,
+                            onMinimizeClick = onMinimizeClick,
+                            onTitleClick = onInfoClick,
+                            onSpeakerClick = { showAudioMenu = !showAudioMenu },
+                            onAudioOptionSelected = { option ->
+                                selectedAudioOption = option
+                                showAudioMenu = false
+                            }
+                        )
+                        TopStatusRow(microphoneOn = microphoneOn)
+                    }
+
+                    if (isSpeakerView) {
+                        SpeakerViewContent(
+                            participants = screenState.participants,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Gallery view (existing centered avatar)
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(124.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color(0xFF78A93A)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = screenState.participantInitials,
+                                    color = Color.White,
+                                    fontSize = 46.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
                         Text(
-                            text = screenState.participantInitials,
+                            text = screenState.participantLabel,
                             color = Color.White,
-                            fontSize = 46.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(start = 12.dp, bottom = 84.dp)
                         )
                     }
                 }
+            }
 
-                Text(
-                    text = screenState.participantLabel,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 12.dp, bottom = 84.dp)
+            // More overlay
+            if (showMoreOverlay) {
+                MeetingMoreDetailedOverlay(
+                    onDismiss = { showMoreOverlay = false }
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SpeakerViewContent(
+    participants: List<ParticipantUi>,
+    modifier: Modifier = Modifier
+) {
+    val activeSpeaker = participants.firstOrNull { it.isActiveSpeaker } ?: participants.firstOrNull()
+    val otherParticipants = participants.filter { it.userId != activeSpeaker?.userId }
+
+    Column(
+        modifier = modifier.padding(top = 90.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Large speaker tile
+        activeSpeaker?.let { speaker ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(160.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color(0xFF78A93A))
+                            .border(3.dp, Color(0xFF5CB85C), RoundedCornerShape(24.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = speaker.initials,
+                            color = Color.White,
+                            fontSize = 56.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = speaker.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        // Thumbnail strip
+        if (otherParticipants.isNotEmpty()) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(otherParticipants, key = { it.userId }) { participant ->
+                    ParticipantThumbnail(participant = participant)
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun ParticipantThumbnail(participant: ParticipantUi) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 80.dp, height = 64.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color(0xFF1E1E1E))
+                .then(
+                    if (participant.isActiveSpeaker) {
+                        Modifier.border(2.dp, Color(0xFF5CB85C), RoundedCornerShape(10.dp))
+                    } else Modifier
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = participant.initials,
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = participant.name.split(" ").first(),
+            color = Color(0xFFAAAAAA),
+            fontSize = 11.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
 @Composable
 private fun MeetingDetailedTopBar(
     title: String,
-    onBackClick: () -> Unit
+    showAudioMenu: Boolean,
+    selectedAudioOption: MeetingAudioOption,
+    onMinimizeClick: () -> Unit,
+    onTitleClick: () -> Unit,
+    onSpeakerClick: () -> Unit,
+    onAudioOptionSelected: (MeetingAudioOption) -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFF161616))
-            .padding(horizontal = 8.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(
-                imageVector = Icons.Default.OpenInFull,
-                contentDescription = "Back",
-                tint = Color.White
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onMinimizeClick) {
+                Icon(
+                    imageVector = Icons.Default.CloseFullscreen,
+                    contentDescription = "Minimize",
+                    tint = Color.White
+                )
+            }
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onTitleClick)
             )
+            IconButton(
+                onClick = onSpeakerClick,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color(0xFF2E2E31))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = "Speaker",
+                    tint = if (selectedAudioOption == MeetingAudioOption.NoAudio) {
+                        Color(0xFFE65B5B)
+                    } else {
+                        Color.White
+                    }
+                )
+            }
         }
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(onClick = {}) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                contentDescription = "Speaker",
-                tint = Color.White
+
+        if (showAudioMenu) {
+            MeetingAudioMenu(
+                selectedOption = selectedAudioOption,
+                onOptionSelected = onAudioOptionSelected,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 64.dp, end = 14.dp)
+                    .width(208.dp)
             )
         }
     }
 }
 
 @Composable
-private fun TopStatusRow() {
+private fun TopStatusRow(microphoneOn: Boolean) {
     Row(
         modifier = Modifier
             .padding(start = 14.dp, top = 12.dp),
@@ -165,9 +359,9 @@ private fun TopStatusRow() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         StatusBadge(
-            icon = Icons.Default.MicOff,
+            icon = if (microphoneOn) Icons.Default.Mic else Icons.Default.MicOff,
             containerColor = Color(0xFF1E1E1E),
-            tint = Color(0xFFE75563)
+            tint = if (microphoneOn) ZoomBlue else Color(0xFFE75563)
         )
         StatusBadge(
             icon = Icons.Default.CheckCircle,
@@ -201,7 +395,12 @@ private fun StatusBadge(
 
 @Composable
 private fun MeetingControlBar(
-    controls: List<MeetingControlUiState>,
+    microphoneOn: Boolean,
+    cameraOn: Boolean,
+    onMicrophoneClick: () -> Unit,
+    onCameraClick: () -> Unit,
+    onChatClick: () -> Unit,
+    onMoreClick: () -> Unit,
     onEndClick: () -> Unit
 ) {
     Row(
@@ -212,91 +411,121 @@ private fun MeetingControlBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        controls.forEach { control ->
-            MeetingControlItem(
-                control = control,
-                onClick = if (control.action == MeetingControlAction.End) onEndClick else ({})
-            )
-        }
+        MeetingAudioControlItem(
+            label = if (microphoneOn) "Mute" else "Unmute",
+            enabled = microphoneOn,
+            activeIcon = Icons.Default.Mic,
+            inactiveIcon = Icons.Default.MicOff,
+            onClick = onMicrophoneClick
+        )
+        MeetingAudioControlItem(
+            label = if (cameraOn) "Stop video" else "Start video",
+            enabled = cameraOn,
+            activeIcon = Icons.Default.Videocam,
+            inactiveIcon = Icons.Default.VideocamOff,
+            onClick = onCameraClick
+        )
+        MeetingStaticControlItem(
+            label = "Chat",
+            icon = Icons.AutoMirrored.Filled.Chat,
+            onClick = onChatClick
+        )
+        MeetingStaticControlItem(
+            label = "More",
+            icon = Icons.Default.MoreHoriz,
+            onClick = onMoreClick
+        )
+        MeetingEndControlItem(onClick = onEndClick)
     }
 }
 
 @Composable
-private fun MeetingControlItem(
-    control: MeetingControlUiState,
+private fun MeetingAudioControlItem(
+    label: String,
+    enabled: Boolean,
+    activeIcon: ImageVector,
+    inactiveIcon: ImageVector,
     onClick: () -> Unit
 ) {
-    val (icon, tint, backgroundColor, borderColor) = when (control.action) {
-        MeetingControlAction.Audio -> ControlVisual(
-            icon = Icons.Default.MicOff,
-            tint = Color(0xFFE75563)
-        )
-        MeetingControlAction.Video -> ControlVisual(
-            icon = Icons.Default.VideocamOff,
-            tint = Color(0xFFE75563)
-        )
-        MeetingControlAction.Chat -> ControlVisual(
-            icon = Icons.AutoMirrored.Filled.Chat,
-            tint = Color.White
-        )
-        MeetingControlAction.More -> ControlVisual(
-            icon = Icons.Default.MoreHoriz,
-            tint = Color.White
-        )
-        MeetingControlAction.End -> ControlVisual(
-            icon = Icons.Default.MicOff,
-            tint = Color(0xFFE73561),
-            backgroundColor = Color.Transparent,
-            borderColor = Color(0xFFE73561)
-        )
-    }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        IconButton(
+        MeetingMediaToggleButton(
+            enabled = enabled,
+            activeIcon = activeIcon,
+            inactiveIcon = inactiveIcon,
             onClick = onClick,
             modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(backgroundColor)
-        ) {
-            if (control.action == MeetingControlAction.End) {
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.Transparent),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = control.label,
-                        tint = borderColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = control.label,
-                    tint = tint,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-        }
+                .background(Color.Transparent),
+            size = 40.dp,
+            iconSize = 22.dp,
+            containerColor = Color.Transparent
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = control.label,
+            text = label,
             color = Color.White,
             fontSize = 12.sp
         )
     }
 }
 
-private data class ControlVisual(
-    val icon: ImageVector,
-    val tint: Color,
-    val backgroundColor: Color = Color.Transparent,
-    val borderColor: Color = Color.Transparent
-)
+@Composable
+private fun MeetingStaticControlItem(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+private fun MeetingEndControlItem(onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Transparent),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "End",
+                    tint = Color(0xFFE73561),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "End",
+            color = Color.White,
+            fontSize = 12.sp
+        )
+    }
+}

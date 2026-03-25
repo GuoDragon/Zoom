@@ -17,13 +17,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,13 +40,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.ui.components.MeetingAudioMenu
+import com.example.zoom.ui.components.MeetingAudioOption
+import com.example.zoom.ui.components.MeetingMediaToggleButton
+import com.example.zoom.ui.components.MeetingSessionConfig
 import com.example.zoom.ui.components.ZoomPrimaryActionButton
-import com.example.zoom.ui.theme.ZoomBlue
 
 @Composable
 fun MeetingPreviewScreen(
     onLeaveClick: () -> Unit,
-    onStartClick: () -> Unit
+    onStartClick: (MeetingSessionConfig) -> Unit
 ) {
     var uiState by remember { mutableStateOf<MeetingPreviewUiState?>(null) }
 
@@ -69,7 +70,9 @@ fun MeetingPreviewScreen(
         var cameraOn by remember(screenState) { mutableStateOf(screenState.cameraOn) }
         var alwaysShowPreview by remember(screenState) { mutableStateOf(screenState.alwaysShowPreview) }
         var showAudioMenu by remember { mutableStateOf(false) }
-        var selectedAudioOption by remember { mutableStateOf("wifi") }
+        var selectedAudioOption by remember {
+            mutableStateOf(MeetingAudioOption.WifiOrCellular)
+        }
 
         Scaffold(containerColor = Color.White) { padding ->
             Column(
@@ -121,32 +124,17 @@ fun MeetingPreviewScreen(
                     }
 
                     if (showAudioMenu) {
-                        Column(
+                        MeetingAudioMenu(
+                            selectedOption = selectedAudioOption,
+                            onOptionSelected = { option ->
+                                selectedAudioOption = option
+                                showAudioMenu = false
+                            },
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(top = 52.dp)
                                 .width(208.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color.White)
-                        ) {
-                            AudioOptionRow(
-                                label = "Wi-Fi or cellular data",
-                                selected = selectedAudioOption == "wifi",
-                                onClick = {
-                                    selectedAudioOption = "wifi"
-                                    showAudioMenu = false
-                                }
-                            )
-                            HorizontalDivider(color = Color(0xFFE6E8EC))
-                            AudioOptionRow(
-                                label = "No audio",
-                                selected = selectedAudioOption == "none",
-                                onClick = {
-                                    selectedAudioOption = "none"
-                                    showAudioMenu = false
-                                }
-                            )
-                        }
+                        )
                     }
 
                     Box(
@@ -195,7 +183,15 @@ fun MeetingPreviewScreen(
                 Spacer(modifier = Modifier.height(14.dp))
                 ZoomPrimaryActionButton(
                     text = "Start",
-                    onClick = onStartClick,
+                    onClick = {
+                        onStartClick(
+                            MeetingSessionConfig(
+                                microphoneOn = microphoneOn,
+                                cameraOn = cameraOn,
+                                audioOption = selectedAudioOption
+                            )
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -226,45 +222,14 @@ private fun PreviewToggleButton(
     inactiveIcon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
-    IconButton(
+    MeetingMediaToggleButton(
+        enabled = enabled,
+        activeIcon = activeIcon,
+        inactiveIcon = inactiveIcon,
         onClick = onClick,
-        modifier = Modifier
-            .size(52.dp)
-            .clip(CircleShape)
-            .background(Color(0xFF1F1F22))
-    ) {
-        Icon(
-            imageVector = if (enabled) activeIcon else inactiveIcon,
-            contentDescription = null,
-            tint = if (enabled) ZoomBlue else Color(0xFFE65B5B)
-        )
-    }
-}
-
-@Composable
-private fun AudioOptionRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Check,
-            contentDescription = null,
-            tint = if (selected) Color(0xFF1F2A36) else Color.Transparent,
-            modifier = Modifier.size(18.dp)
-        )
-        Text(
-            text = label,
-            color = Color(0xFF1F2A36),
-            fontSize = 16.sp,
-            modifier = Modifier.padding(start = 8.dp)
-        )
-    }
+        modifier = Modifier,
+        size = 52.dp,
+        iconSize = 24.dp,
+        containerColor = Color(0xFF1F1F22)
+    )
 }
