@@ -11,7 +11,9 @@
       "Bash(./gradlew -q projects)",
       "Bash(python -c \":*)",
       "Bash(find D:AndroidStudioappandroid_templateZoom/app/src/main/assets -type f -name *.json)",
-      "Bash(./gradlew assembleDebug)"
+      "Bash(./gradlew assembleDebug)",
+      "Bash(xargs grep:*)",
+      "Bash(find D:/AndroidStudio/app/android_template/Tencent-Meeting/app/src -name *.kt)"
     ]
   }
 }

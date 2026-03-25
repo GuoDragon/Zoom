@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MeetingMoreDetailedOverlay(
     onRaiseHand: () -> Unit,
+    onParticipantsClick: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     var uiState by remember { mutableStateOf<MeetingMoreDetailedUiState?>(null) }
@@ -88,7 +89,10 @@ fun MeetingMoreDetailedOverlay(
                     state = state,
                     onRaiseHand = onRaiseHand,
                     onMoreEmojisClick = { showReactionsPage = true },
-                    onDismiss = onDismiss
+                    onDismiss = onDismiss,
+                    onItemClick = { label ->
+                        if (label == "Participants") onParticipantsClick()
+                    }
                 )
             }
         }
@@ -102,7 +106,8 @@ private fun PrimaryMorePage(
     state: MeetingMoreDetailedUiState,
     onRaiseHand: () -> Unit,
     onMoreEmojisClick: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onItemClick: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -135,7 +140,7 @@ private fun PrimaryMorePage(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Grid items
-            MoreGrid(items = state.gridItems)
+            MoreGrid(items = state.gridItems, onItemClick = onItemClick)
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -328,7 +333,7 @@ private fun QuickEmojiRow(
 }
 
 @Composable
-private fun MoreGrid(items: List<MoreGridItem>) {
+private fun MoreGrid(items: List<MoreGridItem>, onItemClick: (String) -> Unit = {}) {
     val columns = 3
     val rows = (items.size + columns - 1) / columns
 
@@ -349,7 +354,8 @@ private fun MoreGrid(items: List<MoreGridItem>) {
                         MoreGridCell(
                             item = items[index],
                             icon = getIconForItem(items[index].label),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { onItemClick(items[index].label) }
                         )
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -364,13 +370,16 @@ private fun MoreGrid(items: List<MoreGridItem>) {
 private fun MoreGridCell(
     item: MoreGridItem,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
     val iconTint = if (item.enabled) Color(0xFF333333) else Color(0xFFBBBBBB)
     val labelColor = if (item.enabled) Color(0xFF333333) else Color(0xFFBBBBBB)
 
     Column(
-        modifier = modifier.padding(horizontal = 4.dp),
+        modifier = modifier
+            .padding(horizontal = 4.dp)
+            .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(

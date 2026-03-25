@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.presentation.meetingmoredetailed.MeetingMoreDetailedOverlay
+import com.example.zoom.presentation.meetingparticipantsdetailed.MeetingParticipantsDetailedOverlay
 import com.example.zoom.presentation.meetingspeakerdetailed.ParticipantUi
 import com.example.zoom.ui.components.MeetingAudioMenu
 import com.example.zoom.ui.components.MeetingAudioOption
@@ -69,6 +70,7 @@ fun MeetingDetailedScreen(
 ) {
     var uiState by remember { mutableStateOf<MeetingDetailedUiState?>(null) }
     var showMoreOverlay by remember { mutableStateOf(false) }
+    var showParticipantsOverlay by remember { mutableStateOf(false) }
     var isSpeakerView by remember { mutableStateOf(false) }
     var isHandRaised by remember { mutableStateOf(false) }
 
@@ -171,7 +173,15 @@ fun MeetingDetailedScreen(
             if (showMoreOverlay) {
                 MeetingMoreDetailedOverlay(
                     onRaiseHand = { isHandRaised = true; showMoreOverlay = false },
+                    onParticipantsClick = { showMoreOverlay = false; showParticipantsOverlay = true },
                     onDismiss = { showMoreOverlay = false }
+                )
+            }
+
+            // Participants overlay
+            if (showParticipantsOverlay) {
+                MeetingParticipantsDetailedOverlay(
+                    onDismiss = { showParticipantsOverlay = false }
                 )
             }
 

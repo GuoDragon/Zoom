@@ -2,6 +2,53 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-25 Meeting Participants More Menu Fix)
+
+Adjusted the `Meeting Participants` overlay so the top-right `...` action now matches the latest reference image:
+
+1. Replaced the old `...` behavior that jumped into a participant detail sheet with a small top-right popup menu inside the participants page.
+2. Matched the popup structure to the reference with only 2 actions: `Mute all` and `Ask all to unmute`.
+3. Added local participant-list state inside the overlay so the two menu actions immediately update mic status icons for all non-self participants.
+4. Kept participant-row taps unchanged, so tapping a specific participant still opens that participant's own More page.
+
+### Modified files
+- `presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedOverlay.kt` - added popup menu UI and local mute/unmute-all state handling
+- `README.md`
+
+## Latest Update (2026-03-25 Meeting Participants UI Optimization)
+
+Optimized the Meeting Participants pages to match the UIReference screenshots:
+
+1. **Participants List Page header** — moved X button to the left, added PersonAdd (invite) and MoreHoriz ("...") icons on the right side of the header bar.
+2. **Removed bottom buttons** — removed the "Invite" and "Mute All" blue buttons from the bottom of the participants list.
+3. **Invite options reduced** — trimmed from 5 to 3 options: Send a message, Invite contacts, Copy invite link.
+4. **More page navigation** — clicking "..." in the header opens the Participant More page for the first non-self participant; clicking a participant row still opens their More page directly.
+
+### Modified files
+- `presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedPresenter.kt` — invite options reduced to 3
+- `presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedOverlay.kt` — header refactored, bottom buttons removed, onMoreClick added
+
+## Latest Update (2026-03-25 Meeting Participants Pages)
+
+Added 5 sub-pages under the Meeting Participants branch of the page tree:
+
+1. **Participants List Page** — dark bottom sheet showing all meeting participants with colored initials avatars, name/role tags, mic/camera status icons, and Invite/Mute All buttons.
+2. **Add/Invite Page** — dark bottom sheet with 5 invite options (Copy invite link, Send a message, Send an email, Invite contacts, Invite room system).
+3. **Send Message Page** — displays pre-formatted meeting invitation text with share icon row (Messages, Gmail, Copy).
+4. **Invite Contacts Page** — full-screen contact picker with search bar, alphabetically grouped contact list with sticky headers, and checkbox selection.
+5. **Participant More Page** — action menu for a selected participant (Chat, Mute, Stop Video, Make Host, Make Co-Host, Put in Waiting Room, Remove, Report).
+
+Entry: Meeting Detailed → More → tap "Participants" grid item → closes More overlay, opens Participants overlay.
+
+### New files (3)
+- `presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedContract.kt` — enums, data classes, UI state, MVP contract
+- `presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedPresenter.kt` — loads participants, contacts, invite options from DataRepository
+- `presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedOverlay.kt` — single overlay composable with 5 internal sub-page composables
+
+### Modified files
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt` — added `onParticipantsClick` callback, made grid items clickable
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt` — added `showParticipantsOverlay` state, wired participants overlay
+
 ## Latest Update (2026-03-24 Meeting More Detailed Page — Raise Hand Style Tweak)
 
 Adjusted the white bottom-sheet emoji row to match the UI reference screenshot:
