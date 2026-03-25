@@ -70,6 +70,7 @@ fun MeetingDetailedScreen(
     var uiState by remember { mutableStateOf<MeetingDetailedUiState?>(null) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     var isSpeakerView by remember { mutableStateOf(false) }
+    var isHandRaised by remember { mutableStateOf(false) }
 
     val view = remember {
         object : MeetingDetailedContract.View {
@@ -169,8 +170,29 @@ fun MeetingDetailedScreen(
             // More overlay
             if (showMoreOverlay) {
                 MeetingMoreDetailedOverlay(
+                    onRaiseHand = { isHandRaised = true; showMoreOverlay = false },
                     onDismiss = { showMoreOverlay = false }
                 )
+            }
+
+            // Floating "Lower hand" capsule
+            if (isHandRaised) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 80.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF2A2A2D))
+                        .clickable { isHandRaised = false }
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "🖐 Lower hand",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun MeetingMoreDetailedOverlay(
+    onRaiseHand: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var uiState by remember { mutableStateOf<MeetingMoreDetailedUiState?>(null) }
@@ -79,11 +80,13 @@ fun MeetingMoreDetailedOverlay(
             if (showReactionsPage) {
                 ReactionsPage(
                     state = state,
+                    onRaiseHand = onRaiseHand,
                     onClose = { showReactionsPage = false }
                 )
             } else {
                 PrimaryMorePage(
                     state = state,
+                    onRaiseHand = onRaiseHand,
                     onMoreEmojisClick = { showReactionsPage = true },
                     onDismiss = onDismiss
                 )
@@ -97,6 +100,7 @@ fun MeetingMoreDetailedOverlay(
 @Composable
 private fun PrimaryMorePage(
     state: MeetingMoreDetailedUiState,
+    onRaiseHand: () -> Unit,
     onMoreEmojisClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -124,6 +128,7 @@ private fun PrimaryMorePage(
             // Quick emoji row
             QuickEmojiRow(
                 emojis = state.quickEmojis,
+                onRaiseHand = onRaiseHand,
                 onMoreClick = onMoreEmojisClick
             )
 
@@ -145,6 +150,7 @@ private fun PrimaryMorePage(
 @Composable
 private fun ReactionsPage(
     state: MeetingMoreDetailedUiState,
+    onRaiseHand: () -> Unit,
     onClose: () -> Unit
 ) {
     Column(
@@ -197,7 +203,9 @@ private fun ReactionsPage(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Raise hand button
-            RaiseHandButton()
+            RaiseHandButton(
+                onRaiseHand = onRaiseHand
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -253,6 +261,7 @@ private fun DragHandle() {
 @Composable
 private fun QuickEmojiRow(
     emojis: List<String>,
+    onRaiseHand: () -> Unit,
     onMoreClick: () -> Unit
 ) {
     Row(
@@ -268,7 +277,7 @@ private fun QuickEmojiRow(
                 .height(48.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFFF0F0F0))
-                .clickable { }
+                .clickable { onRaiseHand() }
                 .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -413,14 +422,16 @@ private fun CancelButton(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun RaiseHandButton() {
+private fun RaiseHandButton(
+    onRaiseHand: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF3A3A3D))
-            .clickable { }
+            .clickable { onRaiseHand() }
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
