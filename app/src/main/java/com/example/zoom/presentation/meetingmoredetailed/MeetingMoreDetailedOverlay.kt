@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MeetingMoreDetailedOverlay(
     onRaiseHand: () -> Unit,
+    onEmojiSelected: (String) -> Unit,
     onParticipantsClick: () -> Unit = {},
     onShareClick: () -> Unit = {},
     onShowCcClick: () -> Unit = {},
@@ -89,12 +90,14 @@ fun MeetingMoreDetailedOverlay(
                 ReactionsPage(
                     state = state,
                     onRaiseHand = onRaiseHand,
+                    onEmojiSelected = onEmojiSelected,
                     onClose = { showReactionsPage = false }
                 )
             } else {
                 PrimaryMorePage(
                     state = state,
                     onRaiseHand = onRaiseHand,
+                    onEmojiSelected = onEmojiSelected,
                     onMoreEmojisClick = { showReactionsPage = true },
                     onDismiss = onDismiss,
                     onItemClick = { label ->
@@ -119,6 +122,7 @@ fun MeetingMoreDetailedOverlay(
 private fun PrimaryMorePage(
     state: MeetingMoreDetailedUiState,
     onRaiseHand: () -> Unit,
+    onEmojiSelected: (String) -> Unit,
     onMoreEmojisClick: () -> Unit,
     onDismiss: () -> Unit,
     onItemClick: (String) -> Unit = {}
@@ -148,6 +152,7 @@ private fun PrimaryMorePage(
             QuickEmojiRow(
                 emojis = state.quickEmojis,
                 onRaiseHand = onRaiseHand,
+                onEmojiSelected = onEmojiSelected,
                 onMoreClick = onMoreEmojisClick
             )
 
@@ -170,6 +175,7 @@ private fun PrimaryMorePage(
 private fun ReactionsPage(
     state: MeetingMoreDetailedUiState,
     onRaiseHand: () -> Unit,
+    onEmojiSelected: (String) -> Unit,
     onClose: () -> Unit
 ) {
     Column(
@@ -229,14 +235,18 @@ private fun ReactionsPage(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Non-verbal feedback row
-            NonVerbalFeedbackRow(items = state.feedbackIcons)
+            NonVerbalFeedbackRow(
+                items = state.feedbackIcons,
+                onEmojiSelected = onEmojiSelected
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             // REACTIONS section
             EmojiSection(
                 title = "REACTIONS",
-                emojis = state.reactionEmojis
+                emojis = state.reactionEmojis,
+                onEmojiSelected = onEmojiSelected
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -244,7 +254,8 @@ private fun ReactionsPage(
             // SEND WITH EFFECT section
             EmojiSection(
                 title = "SEND WITH EFFECT",
-                emojis = state.effectEmojis
+                emojis = state.effectEmojis,
+                onEmojiSelected = onEmojiSelected
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -281,6 +292,7 @@ private fun DragHandle() {
 private fun QuickEmojiRow(
     emojis: List<String>,
     onRaiseHand: () -> Unit,
+    onEmojiSelected: (String) -> Unit,
     onMoreClick: () -> Unit
 ) {
     Row(
@@ -315,16 +327,13 @@ private fun QuickEmojiRow(
         }
 
         emojis.forEach { emoji ->
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFF0F0F0))
-                    .clickable { },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = emoji, fontSize = 22.sp)
-            }
+            MeetingAnimatedEmojiButton(
+                emoji = emoji,
+                modifier = Modifier.size(48.dp),
+                containerColor = Color(0xFFF0F0F0),
+                fontSize = 22.sp,
+                onClick = { onEmojiSelected(emoji) }
+            )
         }
 
         // "..." button
@@ -468,7 +477,10 @@ private fun RaiseHandButton(
 }
 
 @Composable
-private fun NonVerbalFeedbackRow(items: List<FeedbackItem>) {
+private fun NonVerbalFeedbackRow(
+    items: List<FeedbackItem>,
+    onEmojiSelected: (String) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -481,11 +493,15 @@ private fun NonVerbalFeedbackRow(items: List<FeedbackItem>) {
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFF3A3A3D))
-                    .clickable { }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = item.emoji, fontSize = 22.sp)
+                MeetingAnimatedEmojiButton(
+                    emoji = item.emoji,
+                    modifier = Modifier.size(44.dp),
+                    fontSize = 22.sp,
+                    onClick = { onEmojiSelected(item.emoji) }
+                )
             }
         }
     }
@@ -494,7 +510,8 @@ private fun NonVerbalFeedbackRow(items: List<FeedbackItem>) {
 @Composable
 private fun EmojiSection(
     title: String,
-    emojis: List<String>
+    emojis: List<String>,
+    onEmojiSelected: (String) -> Unit
 ) {
     Text(
         text = title,
@@ -518,15 +535,12 @@ private fun EmojiSection(
         verticalAlignment = Alignment.CenterVertically
     ) {
         emojis.forEach { emoji ->
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable { },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = emoji, fontSize = 22.sp)
-            }
+            MeetingAnimatedEmojiButton(
+                emoji = emoji,
+                modifier = Modifier.size(40.dp),
+                fontSize = 22.sp,
+                onClick = { onEmojiSelected(emoji) }
+            )
         }
 
         // "..." more button

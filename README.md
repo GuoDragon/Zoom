@@ -2,6 +2,40 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-26 Meeting Emoji Flow And Safe Driving Direction Fix)
+
+Implemented the latest in-meeting refinement task from the requirements document:
+
+1. Updated `Meeting More Detailed Page` emoji behavior so tapping a quick emoji, reaction emoji, effect emoji, or non-verbal feedback emoji now dismisses the popup first and then plays a transient emoji animation on the meeting screen near the lower-middle area.
+2. Moved the emoji animation responsibility to `MeetingDetailedScreen`, so the send effect now appears on the underlying meeting UI instead of inside the popup itself.
+3. Corrected the safe driving swipe direction so `Meeting Safe Driving Mode Page` behaves as the page on the left side of the main meeting screen.
+4. Centered the `Tap to speak` button horizontally and adjusted the safe driving page indicator to reflect the corrected page order.
+5. Re-ran `:app:compileDebugKotlin` and confirmed the build succeeds.
+
+### Modified files
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt`
+- `presentation/meetingdetailed/MeetingSafeDrivingModeScreen.kt`
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt`
+- `presentation/meetingmoredetailed/MeetingEmojiAnimation.kt`
+- `README.md`
+
+## Latest Update (2026-03-26 Safe Driving Mode And Emoji Send Animation)
+
+Implemented the latest in-meeting refinement task from the requirements document:
+
+1. Added emoji send micro-animations to `Meeting More Detailed Page`, so tapping quick emojis and reaction emojis now creates a small upward fade-out send effect near the tapped emoji.
+2. Added `Meeting Safe Driving Mode Page` as a second in-meeting mode that appears after swiping left on the main meeting page.
+3. Added right-swipe navigation from `Meeting Safe Driving Mode Page` back to the normal meeting page.
+4. Reused the existing speaker/audio menu behavior in the safe driving page header and kept the red `End` action wired to the same leave-meeting flow as before.
+5. Added a local pulse animation to the central `Tap to speak` button in safe driving mode.
+
+### Modified files
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt`
+- `presentation/meetingdetailed/MeetingSafeDrivingModeScreen.kt`
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt`
+- `presentation/meetingmoredetailed/MeetingEmojiAnimation.kt`
+- `README.md`
+
 ## Latest Update (2026-03-26 Meeting More Pages Compile Fix)
 
 Fixed the Kotlin compilation failure introduced in the new `meetingmorepages` module:

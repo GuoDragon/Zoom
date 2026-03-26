@@ -3,6 +3,7 @@ package com.example.zoom.presentation.meetingdetailed
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +63,7 @@ import com.example.zoom.presentation.meetingmorepages.MeetingNotesScreen
 import com.example.zoom.presentation.meetingmorepages.MeetingSettingsOverlay
 import com.example.zoom.presentation.meetingmorepages.MeetingShareOverlay
 import com.example.zoom.presentation.meetingmorepages.MeetingShowCcToast
+import com.example.zoom.presentation.meetingmoredetailed.MeetingFloatingEmojiReaction
 import com.example.zoom.presentation.meetingmoredetailed.MeetingMoreDetailedOverlay
 import com.example.zoom.presentation.meetingparticipantsdetailed.MeetingParticipantsDetailedOverlay
 import com.example.zoom.presentation.meetingspeakerdetailed.ParticipantUi
@@ -67,6 +72,16 @@ import com.example.zoom.ui.components.MeetingAudioOption
 import com.example.zoom.ui.components.MeetingMediaToggleButton
 import com.example.zoom.ui.components.MeetingSessionConfig
 import com.example.zoom.ui.theme.ZoomBlue
+
+private enum class MeetingPageMode {
+    MAIN,
+    SAFE_DRIVING
+}
+
+private data class MeetingEmojiReaction(
+    val id: Int,
+    val emoji: String
+)
 
 @Composable
 fun MeetingDetailedScreen(
@@ -82,8 +97,11 @@ fun MeetingDetailedScreen(
     var showMeetingInfoOverlay by remember { mutableStateOf(false) }
     var activeMeetingMorePage by remember { mutableStateOf<MeetingMorePage?>(null) }
     var showClosedCaptionToast by remember { mutableStateOf(false) }
+    var pageMode by remember { mutableStateOf(MeetingPageMode.MAIN) }
     var isSpeakerView by remember { mutableStateOf(false) }
     var isHandRaised by remember { mutableStateOf(false) }
+    var nextEmojiReactionId by remember { mutableIntStateOf(0) }
+    var activeEmojiReaction by remember { mutableStateOf<MeetingEmojiReaction?>(null) }
 
     val view = remember {
         object : MeetingDetailedContract.View {
@@ -108,75 +126,49 @@ fun MeetingDetailedScreen(
                 containerColor = Color.Black,
                 contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
                 bottomBar = {
-                    MeetingControlBar(
-                        microphoneOn = microphoneOn,
-                        cameraOn = cameraOn,
-                        onMicrophoneClick = { microphoneOn = !microphoneOn },
-                        onCameraClick = { cameraOn = !cameraOn },
-                        onChatClick = onChatClick,
-                        onMoreClick = { showMoreOverlay = true },
-                        onEndClick = onEndClick
-                    )
+                    if (pageMode == MeetingPageMode.MAIN) {
+                        MeetingControlBar(
+                            microphoneOn = microphoneOn,
+                            cameraOn = cameraOn,
+                            onMicrophoneClick = { microphoneOn = !microphoneOn },
+                            onCameraClick = { cameraOn = !cameraOn },
+                            onChatClick = onChatClick,
+                            onMoreClick = { showMoreOverlay = true },
+                            onEndClick = onEndClick
+                        )
+                    }
                 }
             ) { padding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .padding(padding)
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        MeetingDetailedTopBar(
-                            title = screenState.title,
-                            showAudioMenu = showAudioMenu,
-                            selectedAudioOption = selectedAudioOption,
-                            onMinimizeClick = onMinimizeClick,
-                            onTitleClick = onInfoClick,
-                            onSpeakerClick = { showAudioMenu = !showAudioMenu },
-                            onAudioOptionSelected = { option ->
-                                selectedAudioOption = option
-                                showAudioMenu = false
-                            }
-                        )
-                        TopStatusRow(microphoneOn = microphoneOn)
-                    }
-
-                    if (isSpeakerView) {
-                        SpeakerViewContent(
-                            participants = screenState.participants,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        // Gallery view (existing centered avatar)
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(124.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(Color(0xFF78A93A)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = screenState.participantInitials,
-                                    color = Color.White,
-                                    fontSize = 46.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = screenState.participantLabel,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(start = 12.dp, bottom = 84.dp)
-                        )
-                    }
+                when (pageMode) {
+                    MeetingPageMode.MAIN -> MeetingMainPageContent(
+                        screenState = screenState,
+                        padding = padding,
+                        showAudioMenu = showAudioMenu,
+                        selectedAudioOption = selectedAudioOption,
+                        microphoneOn = microphoneOn,
+                        isSpeakerView = isSpeakerView,
+                        onMinimizeClick = onMinimizeClick,
+                        onTitleClick = onInfoClick,
+                        onSpeakerClick = { showAudioMenu = !showAudioMenu },
+                        onAudioOptionSelected = { option ->
+                            selectedAudioOption = option
+                            showAudioMenu = false
+                        },
+                        onSwipeRight = { pageMode = MeetingPageMode.SAFE_DRIVING }
+                    )
+                    MeetingPageMode.SAFE_DRIVING -> MeetingSafeDrivingModeScreen(
+                        microphoneOn = microphoneOn,
+                        cameraOn = cameraOn,
+                        selectedAudioOption = selectedAudioOption,
+                        showAudioMenu = showAudioMenu,
+                        onSpeakerClick = { showAudioMenu = !showAudioMenu },
+                        onAudioOptionSelected = { option ->
+                            selectedAudioOption = option
+                            showAudioMenu = false
+                        },
+                        onEndClick = onEndClick,
+                        onSwipeBack = { pageMode = MeetingPageMode.MAIN }
+                    )
                 }
             }
 
@@ -184,6 +176,14 @@ fun MeetingDetailedScreen(
             if (showMoreOverlay) {
                 MeetingMoreDetailedOverlay(
                     onRaiseHand = { isHandRaised = true; showMoreOverlay = false },
+                    onEmojiSelected = { emoji ->
+                        nextEmojiReactionId += 1
+                        activeEmojiReaction = MeetingEmojiReaction(
+                            id = nextEmojiReactionId,
+                            emoji = emoji
+                        )
+                        showMoreOverlay = false
+                    },
                     onParticipantsClick = { showMoreOverlay = false; showParticipantsOverlay = true },
                     onShareClick = {
                         showMoreOverlay = false
@@ -251,6 +251,23 @@ fun MeetingDetailedScreen(
                 onAutoDismiss = { showClosedCaptionToast = false }
             )
 
+            activeEmojiReaction?.let { reaction ->
+                key(reaction.id) {
+                    MeetingFloatingEmojiReaction(
+                        emoji = reaction.emoji,
+                        fontSize = 42.sp,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 176.dp),
+                        onFinished = {
+                            if (activeEmojiReaction?.id == reaction.id) {
+                                activeEmojiReaction = null
+                            }
+                        }
+                    )
+                }
+            }
+
             // Floating "Lower hand" capsule
             if (isHandRaised) {
                 Box(
@@ -270,6 +287,94 @@ fun MeetingDetailedScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MeetingMainPageContent(
+    screenState: MeetingDetailedUiState,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    showAudioMenu: Boolean,
+    selectedAudioOption: MeetingAudioOption,
+    microphoneOn: Boolean,
+    isSpeakerView: Boolean,
+    onMinimizeClick: () -> Unit,
+    onTitleClick: () -> Unit,
+    onSpeakerClick: () -> Unit,
+    onAudioOptionSelected: (MeetingAudioOption) -> Unit,
+    onSwipeRight: () -> Unit
+) {
+    var totalHorizontalDrag by remember { mutableStateOf(0f) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(padding)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = { totalHorizontalDrag = 0f },
+                    onDragCancel = { totalHorizontalDrag = 0f },
+                    onHorizontalDrag = { _, dragAmount ->
+                        totalHorizontalDrag += dragAmount
+                    },
+                    onDragEnd = {
+                        if (totalHorizontalDrag > 90f) {
+                            onSwipeRight()
+                        }
+                        totalHorizontalDrag = 0f
+                    }
+                )
+            }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            MeetingDetailedTopBar(
+                title = screenState.title,
+                showAudioMenu = showAudioMenu,
+                selectedAudioOption = selectedAudioOption,
+                onMinimizeClick = onMinimizeClick,
+                onTitleClick = onTitleClick,
+                onSpeakerClick = onSpeakerClick,
+                onAudioOptionSelected = onAudioOptionSelected
+            )
+            TopStatusRow(microphoneOn = microphoneOn)
+        }
+
+        if (isSpeakerView) {
+            SpeakerViewContent(
+                participants = screenState.participants,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(124.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF78A93A)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = screenState.participantInitials,
+                        color = Color.White,
+                        fontSize = 46.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Text(
+                text = screenState.participantLabel,
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 12.dp, bottom = 84.dp)
+            )
         }
     }
 }
