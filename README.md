@@ -2,6 +2,23 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-26 Meeting Chat Overlay Refinement)
+
+Refined `Meeting Chat Detailed Page` to match the latest screenshot direction:
+
+1. Reworked the meeting chat entry from a standalone full-screen route into an in-meeting bottom overlay that sits above the live meeting screen.
+2. Kept the meeting content visible behind the chat panel and left the in-meeting bottom control bar visible below the panel.
+3. Restyled the chat panel to match the reference more closely with a drag handle, close button, centered meeting title, `Everyone` and `New chat` shortcuts, centered time marker, compact dark message bubbles, and the screenshot-style message composer.
+4. Kept chat interactions local-only: sending a message appends it to the overlay list and scrolls it into view, while the header actions and message action icons remain visual-only.
+5. Removed the now-unused dedicated meeting-chat navigation route and re-ran `:app:compileDebugKotlin` after implementation.
+
+### Modified files
+- `presentation/meetingchatdetailed/MeetingChatDetailedScreen.kt`
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt`
+- `navigation/NavGraph.kt`
+- `navigation/Routes.kt`
+- `README.md`
+
 ## Latest Update (2026-03-26 Meeting Emoji Flow And Safe Driving Direction Fix)
 
 Implemented the latest in-meeting refinement task from the requirements document:

@@ -16,7 +16,6 @@ import com.example.zoom.presentation.joinmeeting.JoinMeetingScreen
 import com.example.zoom.presentation.leavemeeting.LeaveMeetingScreen
 import com.example.zoom.presentation.leavemeetingdetailed.LeaveMeetingDetailedScreen
 import com.example.zoom.presentation.mail.MailScreen
-import com.example.zoom.presentation.meetingchatdetailed.MeetingChatDetailedScreen
 import com.example.zoom.presentation.meetingdetailed.MeetingDetailedScreen
 import com.example.zoom.presentation.meetinginfodetailed.MeetingInfoDetailedScreen
 import com.example.zoom.presentation.meetingpreview.MeetingPreviewScreen
@@ -123,7 +122,6 @@ fun ZoomNavGraph(
                     navController.popBackStack(Screen.Home.route, false)
                 },
                 onEndClick = { navController.navigate(Screen.LeaveMeetingDetailed.route) },
-                onChatClick = { navController.navigate(Screen.MeetingChatDetailed.route) },
                 onInfoClick = { navController.navigate(Screen.MeetingInfoDetailed.route) }
             )
         }
@@ -156,9 +154,6 @@ fun ZoomNavGraph(
         }
         composable(Screen.Settings.route) {
             SettingsScreen(onBackClick = { navController.popBackStack() })
-        }
-        composable(Screen.MeetingChatDetailed.route) {
-            MeetingChatDetailedScreen(onBackClick = { navController.popBackStack() })
         }
         composable(Screen.MeetingInfoDetailed.route) {
             MeetingInfoDetailedScreen(onBackClick = { navController.popBackStack() })

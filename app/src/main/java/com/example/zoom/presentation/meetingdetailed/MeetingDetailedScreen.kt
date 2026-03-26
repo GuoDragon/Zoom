@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.presentation.meetingchatdetailed.MeetingChatDetailedOverlay
 import com.example.zoom.presentation.meetinginfodetailed.MeetingInfoOverlay
 import com.example.zoom.presentation.meetingmorepages.MeetingAppsScreen
 import com.example.zoom.presentation.meetingmorepages.MeetingHostToolsOverlay
@@ -88,10 +89,10 @@ fun MeetingDetailedScreen(
     initialConfig: MeetingSessionConfig,
     onMinimizeClick: () -> Unit,
     onEndClick: () -> Unit,
-    onChatClick: () -> Unit = {},
     onInfoClick: () -> Unit = {}
 ) {
     var uiState by remember { mutableStateOf<MeetingDetailedUiState?>(null) }
+    var showChatOverlay by remember { mutableStateOf(false) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     var showParticipantsOverlay by remember { mutableStateOf(false) }
     var showMeetingInfoOverlay by remember { mutableStateOf(false) }
@@ -132,7 +133,7 @@ fun MeetingDetailedScreen(
                             cameraOn = cameraOn,
                             onMicrophoneClick = { microphoneOn = !microphoneOn },
                             onCameraClick = { cameraOn = !cameraOn },
-                            onChatClick = onChatClick,
+                            onChatClick = { showChatOverlay = true },
                             onMoreClick = { showMoreOverlay = true },
                             onEndClick = onEndClick
                         )
@@ -173,6 +174,13 @@ fun MeetingDetailedScreen(
             }
 
             // More overlay
+            if (showChatOverlay) {
+                MeetingChatDetailedOverlay(
+                    meetingTitle = screenState.title,
+                    onDismiss = { showChatOverlay = false }
+                )
+            }
+
             if (showMoreOverlay) {
                 MeetingMoreDetailedOverlay(
                     onRaiseHand = { isHandRaised = true; showMoreOverlay = false },

@@ -27,7 +27,6 @@ sealed class Screen(val route: String) {
         }
     }
     object LeaveMeetingDetailed : Screen("leave_meeting_detailed")
-    object MeetingChatDetailed : Screen("meeting_chat_detailed")
     object MeetingInfoDetailed : Screen("meeting_info_detailed")
     object JoinMeeting : Screen("join_meeting")
     object ScheduleMeeting : Screen("schedule_meeting")
