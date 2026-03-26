@@ -2,6 +2,39 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-26 Leave Meeting Detailed Exit Fix)
+
+Implemented the latest meeting-exit behavior fix from the requirements document:
+
+1. Fixed `Leave the Meeting Detailed Page` so both `End meeting for all` and `Leave meeting` now respond correctly no matter whether the meeting was opened from `Host Meeting` or `Join Meeting`.
+2. Removed the broken route-specific exit behavior that depended on `HostMeeting` being present in the back stack.
+3. Added an explicit in-meeting exit action model so `End meeting for all` and `Leave meeting` now travel through separate code paths before returning to `Home`.
+4. Centralized detailed meeting-exit cleanup in the app shell so PiP/minimized meeting state is cleared consistently when leaving or ending a meeting.
+5. Re-ran `:app:compileDebugKotlin` and confirmed the build succeeds.
+
+### Modified files
+- `navigation/Routes.kt`
+- `navigation/NavGraph.kt`
+- `MainActivity.kt`
+- `README.md`
+
+## Latest Update (2026-03-26 Join Meeting Page And History Overlay)
+
+Implemented the latest `Join Meeting Page` refinement task from the requirements document:
+
+1. Updated the meeting ID field to accept digits only and enable `Join` only when exactly 9 digits have been entered.
+2. Wired `Join` to reuse the same downstream flow as `Host Meeting`, entering the existing `Meeting Preview` page before continuing into the meeting.
+3. Added a `Join Meeting History Page` bottom-sheet overlay opened from the meeting ID dropdown arrow.
+4. Added local meeting-history items that can be tapped to quickly fill the meeting number, plus `Clear history` and `Done` actions matching the screenshot pattern.
+5. Re-ran `:app:compileDebugKotlin` after the changes and confirmed the build succeeds.
+
+### Modified files
+- `presentation/joinmeeting/JoinMeetingContract.kt`
+- `presentation/joinmeeting/JoinMeetingPresenter.kt`
+- `presentation/joinmeeting/JoinMeetingScreen.kt`
+- `navigation/NavGraph.kt`
+- `README.md`
+
 ## Latest Update (2026-03-26 Meeting Chat Overlay Refinement)
 
 Refined `Meeting Chat Detailed Page` to match the latest screenshot direction:

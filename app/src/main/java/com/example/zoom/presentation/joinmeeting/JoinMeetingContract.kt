@@ -12,5 +12,11 @@ interface JoinMeetingContract {
 
 data class JoinMeetingUiState(
     val audioOff: Boolean,
-    val videoOff: Boolean
+    val videoOff: Boolean,
+    val historyItems: List<JoinMeetingHistoryItem>
+)
+
+data class JoinMeetingHistoryItem(
+    val title: String,
+    val meetingNumber: String
 )

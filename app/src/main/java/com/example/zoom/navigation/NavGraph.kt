@@ -32,7 +32,8 @@ fun ZoomNavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     onAvatarClick: () -> Unit,
-    onMeetingMinimize: (MeetingSessionConfig, String) -> Unit = { _, _ -> }
+    onMeetingMinimize: (MeetingSessionConfig, String) -> Unit = { _, _ -> },
+    onMeetingDetailedExit: (MeetingExitAction) -> Unit = {}
 ) {
     NavHost(navController = navController, startDestination = Screen.Home.route, modifier = modifier) {
         composable(Screen.Home.route) {
@@ -128,16 +129,27 @@ fun ZoomNavGraph(
         composable(Screen.LeaveMeetingDetailed.route) {
             LeaveMeetingDetailedScreen(
                 onEndForAllClick = {
-                    navController.popBackStack(Screen.HostMeeting.route, false)
+                    onMeetingDetailedExit(MeetingExitAction.END_FOR_ALL)
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
                 },
                 onLeaveClick = {
-                    navController.popBackStack(Screen.HostMeeting.route, false)
+                    onMeetingDetailedExit(MeetingExitAction.LEAVE_SELF)
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
                 },
                 onCancelClick = { navController.popBackStack() }
             )
         }
         composable(Screen.JoinMeeting.route) {
-            JoinMeetingScreen(onBackClick = { navController.popBackStack() })
+            JoinMeetingScreen(
+                onBackClick = { navController.popBackStack() },
+                onJoinMeetingClick = { navController.navigate(Screen.MeetingPreview.route) }
+            )
         }
         composable(Screen.ScheduleMeeting.route) {
             ScheduleMeetingScreen(onBackClick = { navController.popBackStack() })

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.zoom.data.DataRepository
+import com.example.zoom.navigation.MeetingExitAction
 import com.example.zoom.navigation.Screen
 import com.example.zoom.navigation.ZoomNavGraph
 import com.example.zoom.presentation.more.MorePageOverlay
@@ -159,6 +160,18 @@ fun ZoomApp() {
                     minimizedConfig = config
                     minimizedInitials = initials
                     meetingMinimized = true
+                },
+                onMeetingDetailedExit = { exitAction ->
+                    when (exitAction) {
+                        MeetingExitAction.END_FOR_ALL -> {
+                            meetingMinimized = false
+                            minimizedConfig = null
+                        }
+                        MeetingExitAction.LEAVE_SELF -> {
+                            meetingMinimized = false
+                            minimizedConfig = null
+                        }
+                    }
                 }
             )
 

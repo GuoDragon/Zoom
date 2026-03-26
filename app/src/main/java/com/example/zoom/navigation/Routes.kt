@@ -2,6 +2,11 @@ package com.example.zoom.navigation
 
 import com.example.zoom.ui.components.MeetingSessionConfig
 
+enum class MeetingExitAction {
+    END_FOR_ALL,
+    LEAVE_SELF
+}
+
 sealed class Screen(val route: String) {
     object Search : Screen("search")
     object Home : Screen("home")
