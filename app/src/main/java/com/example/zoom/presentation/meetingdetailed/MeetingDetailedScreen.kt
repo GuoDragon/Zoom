@@ -51,6 +51,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.presentation.meetinginfodetailed.MeetingInfoOverlay
+import com.example.zoom.presentation.meetingmorepages.MeetingAppsScreen
+import com.example.zoom.presentation.meetingmorepages.MeetingHostToolsOverlay
+import com.example.zoom.presentation.meetingmorepages.MeetingMorePage
+import com.example.zoom.presentation.meetingmorepages.MeetingNotesScreen
+import com.example.zoom.presentation.meetingmorepages.MeetingSettingsOverlay
+import com.example.zoom.presentation.meetingmorepages.MeetingShareOverlay
+import com.example.zoom.presentation.meetingmorepages.MeetingShowCcToast
 import com.example.zoom.presentation.meetingmoredetailed.MeetingMoreDetailedOverlay
 import com.example.zoom.presentation.meetingparticipantsdetailed.MeetingParticipantsDetailedOverlay
 import com.example.zoom.presentation.meetingspeakerdetailed.ParticipantUi
@@ -71,6 +79,9 @@ fun MeetingDetailedScreen(
     var uiState by remember { mutableStateOf<MeetingDetailedUiState?>(null) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     var showParticipantsOverlay by remember { mutableStateOf(false) }
+    var showMeetingInfoOverlay by remember { mutableStateOf(false) }
+    var activeMeetingMorePage by remember { mutableStateOf<MeetingMorePage?>(null) }
+    var showClosedCaptionToast by remember { mutableStateOf(false) }
     var isSpeakerView by remember { mutableStateOf(false) }
     var isHandRaised by remember { mutableStateOf(false) }
 
@@ -174,6 +185,31 @@ fun MeetingDetailedScreen(
                 MeetingMoreDetailedOverlay(
                     onRaiseHand = { isHandRaised = true; showMoreOverlay = false },
                     onParticipantsClick = { showMoreOverlay = false; showParticipantsOverlay = true },
+                    onShareClick = {
+                        showMoreOverlay = false
+                        activeMeetingMorePage = MeetingMorePage.SHARE
+                    },
+                    onShowCcClick = {
+                        showMoreOverlay = false
+                        showClosedCaptionToast = true
+                    },
+                    onNotesClick = {
+                        showMoreOverlay = false
+                        activeMeetingMorePage = MeetingMorePage.NOTES
+                    },
+                    onAppsClick = {
+                        showMoreOverlay = false
+                        activeMeetingMorePage = MeetingMorePage.APPS
+                    },
+                    onMeetingInfoClick = { showMoreOverlay = false; showMeetingInfoOverlay = true },
+                    onHostToolsClick = {
+                        showMoreOverlay = false
+                        activeMeetingMorePage = MeetingMorePage.HOST_TOOLS
+                    },
+                    onSettingsClick = {
+                        showMoreOverlay = false
+                        activeMeetingMorePage = MeetingMorePage.SETTINGS
+                    },
                     onDismiss = { showMoreOverlay = false }
                 )
             }
@@ -184,6 +220,36 @@ fun MeetingDetailedScreen(
                     onDismiss = { showParticipantsOverlay = false }
                 )
             }
+
+            if (showMeetingInfoOverlay) {
+                MeetingInfoOverlay(
+                    onDismiss = { showMeetingInfoOverlay = false }
+                )
+            }
+
+            when (activeMeetingMorePage) {
+                MeetingMorePage.SHARE -> MeetingShareOverlay(
+                    onDismiss = { activeMeetingMorePage = null }
+                )
+                MeetingMorePage.NOTES -> MeetingNotesScreen(
+                    onClose = { activeMeetingMorePage = null }
+                )
+                MeetingMorePage.APPS -> MeetingAppsScreen(
+                    onClose = { activeMeetingMorePage = null }
+                )
+                MeetingMorePage.HOST_TOOLS -> MeetingHostToolsOverlay(
+                    onDismiss = { activeMeetingMorePage = null }
+                )
+                MeetingMorePage.SETTINGS -> MeetingSettingsOverlay(
+                    onDismiss = { activeMeetingMorePage = null }
+                )
+                null -> Unit
+            }
+
+            MeetingShowCcToast(
+                visible = showClosedCaptionToast,
+                onAutoDismiss = { showClosedCaptionToast = false }
+            )
 
             // Floating "Lower hand" capsule
             if (isHandRaised) {

@@ -51,6 +51,13 @@ import androidx.compose.ui.unit.sp
 fun MeetingMoreDetailedOverlay(
     onRaiseHand: () -> Unit,
     onParticipantsClick: () -> Unit = {},
+    onShareClick: () -> Unit = {},
+    onShowCcClick: () -> Unit = {},
+    onNotesClick: () -> Unit = {},
+    onAppsClick: () -> Unit = {},
+    onHostToolsClick: () -> Unit = {},
+    onMeetingInfoClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     var uiState by remember { mutableStateOf<MeetingMoreDetailedUiState?>(null) }
@@ -92,6 +99,13 @@ fun MeetingMoreDetailedOverlay(
                     onDismiss = onDismiss,
                     onItemClick = { label ->
                         if (label == "Participants") onParticipantsClick()
+                        if (label == "Share") onShareClick()
+                        if (label == "Show CC") onShowCcClick()
+                        if (label == "Notes") onNotesClick()
+                        if (label == "Apps") onAppsClick()
+                        if (label == "Meeting info") onMeetingInfoClick()
+                        if (label == "Host tools") onHostToolsClick()
+                        if (label == "Settings") onSettingsClick()
                     }
                 )
             }

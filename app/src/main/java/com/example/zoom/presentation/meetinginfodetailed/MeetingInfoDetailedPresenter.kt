@@ -13,10 +13,13 @@ class MeetingInfoDetailedPresenter(
             MeetingInfoDetailedUiState(
                 topic = meeting.topic,
                 meetingId = meeting.meetingId,
-                passcode = "283746",
+                passcode = "qwjU5X",
                 host = host.username,
                 inviteLink = "https://zoom.us/j/${meeting.meetingId}",
-                dialInNumbers = "+1 669 900 9128, +1 346 248 7799"
+                participantId = "408628",
+                encryptionLabel = "Enhanced",
+                connectionSummary = "You are connected to Zoom Global\nNetwork via data centers in the United States",
+                securityOverviewLabel = "Security settings overview"
             )
         )
     }

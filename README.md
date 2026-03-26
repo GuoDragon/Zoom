@@ -2,6 +2,57 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-26 Meeting More Pages Compile Fix)
+
+Fixed the Kotlin compilation failure introduced in the new `meetingmorepages` module:
+
+1. Removed the incorrect `androidx.compose.foundation.layout.weight` imports from the new meeting more page files.
+2. Kept the existing `Modifier.weight(...)` layout calls unchanged, so the UI structure stayed the same.
+3. Re-ran `:app:compileDebugKotlin` and confirmed the build now succeeds.
+
+### Modified files
+- `presentation/meetingmorepages/MeetingMorePagesScreens.kt`
+- `presentation/meetingmorepages/MeetingMorePagesShared.kt`
+- `README.md`
+
+## Latest Update (2026-03-26 Meeting More Child Pages Expansion)
+
+Completed the remaining newly added child pages under `Meeting More Detailed Page` from the updated page tree:
+
+1. Added `Meetint Share Page`, `Meetint Notes Page`, `Meetint Apps Page`, `Meetint Host tools Page`, and `Meetint Settings Page` as real in-meeting child interfaces.
+2. Added `Meetint Show CC Page` as an in-meeting bottom toast matching the reference instead of a separate full screen page.
+3. Wired all More-grid entries so `Share`, `Show CC`, `Notes`, `Apps`, `Host tools`, and `Settings` now open their own local-state pages or overlays.
+4. Kept the new pages local-only with screenshot-level or richer local interactions such as sort toggles, filter cycling, local selection, and local draft state, without introducing deeper navigation.
+5. Built the new pages in a separate `meetingmorepages` presentation module to avoid expanding the existing meeting screen files too aggressively.
+
+### Modified files
+- `presentation/meetingmorepages/MeetingMorePagesContract.kt`
+- `presentation/meetingmorepages/MeetingMorePagesPresenter.kt`
+- `presentation/meetingmorepages/MeetingMorePagesShared.kt`
+- `presentation/meetingmorepages/MeetingMorePagesOverlays.kt`
+- `presentation/meetingmorepages/MeetingMorePagesScreens.kt`
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt`
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt`
+- `README.md`
+
+## Latest Update (2026-03-25 Meeting Info Page Unification)
+
+Unified the in-meeting `Meeting info` experience so the More-grid entry and the standalone `Meeting Info Detailed Page` now share the same screenshot-driven UI:
+
+1. Added a new in-meeting `Meeting info` overlay that opens from `Meeting More Detailed Page`.
+2. Reworked `Meeting Info Detailed Page` to use the same dark bottom-sheet layout instead of the old full-screen info page.
+3. Updated the meeting info data model with the extra fields required by the latest reference: `Participant ID`, `Encryption`, connection summary text, and `Security settings overview`.
+4. Kept `Copy meeting link` as a working local copy action and wired the top-right share icon to the Android system share sheet.
+
+### Modified files
+- `presentation/meetinginfodetailed/MeetingInfoDetailedContract.kt`
+- `presentation/meetinginfodetailed/MeetingInfoDetailedPresenter.kt`
+- `presentation/meetinginfodetailed/MeetingInfoDetailedScreen.kt`
+- `presentation/meetinginfodetailed/MeetingInfoUi.kt`
+- `presentation/meetingmoredetailed/MeetingMoreDetailedOverlay.kt`
+- `presentation/meetingdetailed/MeetingDetailedScreen.kt`
+- `README.md`
+
 ## Latest Update (2026-03-25 Meeting Participants More Menu Fix)
 
 Adjusted the `Meeting Participants` overlay so the top-right `...` action now matches the latest reference image:

@@ -16,6 +16,8 @@ data class MeetingInfoDetailedUiState(
     val passcode: String,
     val host: String,
     val inviteLink: String,
-    val dialInNumbers: String,
-    val isEncrypted: Boolean = true
+    val participantId: String,
+    val encryptionLabel: String,
+    val connectionSummary: String,
+    val securityOverviewLabel: String
 )

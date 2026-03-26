@@ -1,0 +1,74 @@
+{
+    "Zoom Page Tree": {
+        "Personal Info Page": {
+            "Detailed Info Page": {},
+            "Settings Page": {}
+        },
+        "Search Page": {
+            "Search Top Results Page": {},
+            "Search Messages Page": {
+                "Search Messages Detailed Page": {}
+            },
+            "Search Chats and Chnnels Page": {
+                "Search Chats and Chnnels Detailed Page": {}
+            },
+            "Search Meetings Page": {
+                "Search Meetings Detailed Page": {}
+            },
+            "Search Contacts Page": {},
+            "Search Files Page": {
+                "Search Files Detailed Page": {}
+            },
+            "Search Docs Page": {
+                "Search Docs Detailed Page": {}
+            },
+            "Search Whiteboards Page": {
+                "Search Whiteboards Detailed Page": {}
+            },
+            "Search Mail Page": {
+                "Search Mail Detailed Page": {}
+            }
+        },
+        "Home Page": {
+            "Host Meeting Page": {
+                "Meeting Preview Page": {},
+                "Leave the Meeting Preview Page": {},
+                "Meeting Detailed Page": {
+                    "Meeting Chat Detailed Page": {},
+                    "Meeting More Detailed Page": {
+                        "Meeting Raise Hand Page": {},
+                        "Meetint Participents Page": {
+                            "Meetint Participents Add Page": {
+                                "Meetint Participents Add Send message Page": {},
+                                "Meetint Participents Add Invite contacts Page": {}
+                            },
+                            "Meetint Participents More Page": {}
+                        },
+                        "Meetint Share Page": {},
+                        "Meetint Show CC Page": {},
+                        "Meetint Notes Page": {},
+                        "Meetint Apps Page": {},
+                        "Meetint Host tools Page": {},
+                        "Meetint info Page": {},
+                        "Meetint Settings Page": {}
+                    },
+                    "Meeting More and More Detailed Page": {
+                        "Meeting Raise Hand Page": {}
+                    },
+                    "Meeting Speaker Detailed Page": {},
+                    "Meeting Info Detailed Page": {},
+                    "Leave the Meeting Detailed Page": {}
+                }
+            },
+            "Join Meeting Page": {},
+            "Schedule Meeting Page": {},
+            "Share Page": {}
+        },
+        "Team Chat Page": {},
+        "Documents Page": {},
+        "Calendar Page": {},
+        "Mail Page": {},
+        "Expansion Page": {},
+        "More Page": {}
+    }
+}
