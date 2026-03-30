@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.data.DataRepository
 
 @Composable
 fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
@@ -116,15 +117,27 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                     },
                     onMoreClick = { showParticipantsMoreMenu = !showParticipantsMoreMenu },
                     onMuteAllClick = {
+                        val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
                         participants = participants.map { participant ->
                             if (participant.isSelf) participant else participant.copy(isMuted = true)
                         }
+                        DataRepository.recordMeetingAction(
+                            actionType = "MUTE_ALL",
+                            meetingId = displayState.meetingId,
+                            targetUserIds = targetIds
+                        )
                         showParticipantsMoreMenu = false
                     },
                     onAskAllToUnmuteClick = {
+                        val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
                         participants = participants.map { participant ->
                             if (participant.isSelf) participant else participant.copy(isMuted = false)
                         }
+                        DataRepository.recordMeetingAction(
+                            actionType = "ASK_ALL_TO_UNMUTE",
+                            meetingId = displayState.meetingId,
+                            targetUserIds = targetIds
+                        )
                         showParticipantsMoreMenu = false
                     }
                 )
@@ -159,7 +172,19 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                         }
                     },
                     onBack = { currentPage = ParticipantsSubPage.ADD_INVITE },
-                    onInvite = { currentPage = ParticipantsSubPage.ADD_INVITE }
+                    onInvite = {
+                        DataRepository.recordMeetingAction(
+                            actionType = "INVITE_CONTACTS",
+                            meetingId = displayState.meetingId,
+                            targetUserIds = selectedContactIds.toList(),
+                            note = if (selectedContactIds.isEmpty()) {
+                                "No contacts selected"
+                            } else {
+                                "Selected contacts: ${selectedContactIds.joinToString(",")}"
+                            }
+                        )
+                        currentPage = ParticipantsSubPage.ADD_INVITE
+                    }
                 )
                 ParticipantsSubPage.PARTICIPANT_MORE -> {
                     val participant = displayState.participants.find { it.userId == selectedParticipantId }

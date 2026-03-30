@@ -9,8 +9,8 @@ class MeetingChatDetailedPresenter(
     private val view: MeetingChatDetailedContract.View
 ) : MeetingChatDetailedContract.Presenter {
     override fun loadData() {
-        val currentUserId = "user001"
-        val meetingId = "mtg016"
+        val currentUserId = DataRepository.getCurrentUser().userId
+        val meetingId = DataRepository.getCurrentMeeting().meetingId
         val messages = DataRepository.getMessagesByMeetingId(meetingId)
         val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
 

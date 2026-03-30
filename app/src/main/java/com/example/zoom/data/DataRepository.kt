@@ -1,7 +1,11 @@
 package com.example.zoom.data
 
 import android.content.Context
+import com.example.zoom.model.JoinMeetingHistoryAction
+import com.example.zoom.model.JoinMeetingHistoryEntry
+import com.example.zoom.model.JoinMeetingHistorySignal
 import com.example.zoom.model.Meeting
+import com.example.zoom.model.MeetingActionSignal
 import com.example.zoom.model.Message
 import com.example.zoom.model.ScheduledMeetingSignal
 import com.example.zoom.model.User
@@ -16,18 +20,29 @@ object DataRepository {
     private var users: List<User> = emptyList()
     private var meetings: List<Meeting> = emptyList()
     private var messages: List<Message> = emptyList()
+
     private var scheduledMeetingSignals: MutableList<ScheduledMeetingSignal> = mutableListOf()
+    private var runtimeChatMessages: MutableList<Message> = mutableListOf()
+    private var runtimeJoinHistoryEntries: MutableList<JoinMeetingHistoryEntry> = mutableListOf()
+    private var runtimeJoinHistoryActions: MutableList<JoinMeetingHistoryAction> = mutableListOf()
+    private var runtimeMeetingActions: MutableList<MeetingActionSignal> = mutableListOf()
+
     private lateinit var appContext: Context
     private var initialized = false
-    private val meetingDataVersion = MutableStateFlow(0)
+    private val runtimeDataVersion = MutableStateFlow(0)
 
-    private const val runtimeSignalFileName = "scheduled_meetings_runtime.json"
+    private const val runtimeScheduledMeetingFileName = "runtime_scheduled_meetings.json"
+    private const val runtimeChatMessageFileName = "runtime_chat_messages.json"
+    private const val runtimeJoinHistoryFileName = "runtime_join_history.json"
+    private const val runtimeMeetingActionFileName = "runtime_meeting_actions.json"
     private const val runtimeMeetingIdPrefix = "scheduled_"
 
     fun init(context: Context) {
         if (initialized) return
+
         appContext = context.applicationContext
         val assets = appContext.assets
+
         users = gson.fromJson(
             assets.open("data/users.json").bufferedReader().use { it.readText() },
             object : TypeToken<List<User>>() {}.type
@@ -40,16 +55,33 @@ object DataRepository {
             assets.open("data/messages.json").bufferedReader().use { it.readText() },
             object : TypeToken<List<Message>>() {}.type
         )
-        resetRuntimeScheduledMeetingSignals()
+
+        resetRuntimeSignalData()
         initialized = true
     }
 
     fun getUsers(): List<User> = users
+
     fun getMeetings(): List<Meeting> = meetings + scheduledMeetingSignals.map { signalToMeeting(it) }
-    fun getMessages(): List<Message> = messages
-    fun observeMeetingDataVersion(): StateFlow<Int> = meetingDataVersion
+
+    fun getMessages(): List<Message> = messages + runtimeChatMessages
+
+    fun observeMeetingDataVersion(): StateFlow<Int> = runtimeDataVersion
+
     fun getScheduledMeetingSignals(): List<ScheduledMeetingSignal> = scheduledMeetingSignals.toList()
-    fun getScheduledMeetingSignalFilePath(): String = runtimeSignalFile().absolutePath
+
+    fun getMeetingActionSignals(): List<MeetingActionSignal> = runtimeMeetingActions.toList()
+
+    fun getJoinHistoryEntries(): List<JoinMeetingHistoryEntry> = runtimeJoinHistoryEntries.toList()
+
+    fun getRuntimeSignalFilePaths(): Map<String, String> = mapOf(
+        runtimeScheduledMeetingFileName to runtimeScheduledMeetingFile().absolutePath,
+        runtimeChatMessageFileName to runtimeChatMessageFile().absolutePath,
+        runtimeJoinHistoryFileName to runtimeJoinHistoryFile().absolutePath,
+        runtimeMeetingActionFileName to runtimeMeetingActionFile().absolutePath
+    )
+
+    fun getScheduledMeetingSignalFilePath(): String = runtimeScheduledMeetingFile().absolutePath
 
     fun getCurrentUser(): User = users.first { it.userId == "user001" }
 
@@ -67,9 +99,11 @@ object DataRepository {
     }
 
     fun getChatList(): List<Message> {
-        return messages.groupBy { it.meetingId }
+        return getMessages()
+            .groupBy { it.meetingId }
             .mapValues { it.value.maxByOrNull { msg -> msg.timestamp }!! }
-            .values.sortedByDescending { it.timestamp }
+            .values
+            .sortedByDescending { it.timestamp }
     }
 
     fun getUserById(userId: String): User? = users.find { it.userId == userId }
@@ -77,7 +111,7 @@ object DataRepository {
     fun searchMessages(query: String): List<Message> {
         if (query.isBlank()) return emptyList()
         val q = query.lowercase()
-        return messages.filter {
+        return getMessages().filter {
             it.content.lowercase().contains(q) || it.senderName.lowercase().contains(q)
         }
     }
@@ -93,7 +127,7 @@ object DataRepository {
         val q = query.lowercase()
         return users.filter {
             it.username.lowercase().contains(q) ||
-                    (it.email?.lowercase()?.contains(q) == true)
+                (it.email?.lowercase()?.contains(q) == true)
         }
     }
 
@@ -102,9 +136,9 @@ object DataRepository {
         val q = query.lowercase()
         val chatList = getChatList()
         return chatList.filter { msg ->
-            val meeting = meetings.find { it.meetingId == msg.meetingId }
+            val meeting = getMeetingById(msg.meetingId)
             meeting?.topic?.lowercase()?.contains(q) == true ||
-                    msg.content.lowercase().contains(q)
+                msg.content.lowercase().contains(q)
         }
     }
 
@@ -113,8 +147,9 @@ object DataRepository {
             ?: scheduledMeetingSignals.firstOrNull { it.signalId == meetingId }?.let { signalToMeeting(it) }
     }
 
-    fun getMessagesByMeetingId(meetingId: String): List<Message> =
-        messages.filter { it.meetingId == meetingId }.sortedBy { it.timestamp }
+    fun getMessagesByMeetingId(meetingId: String): List<Message> {
+        return getMessages().filter { it.meetingId == meetingId }.sortedBy { it.timestamp }
+    }
 
     fun getCurrentMeeting(): Meeting = meetings.first { it.meetingId == "mtg016" }
 
@@ -147,18 +182,137 @@ object DataRepository {
         )
         scheduledMeetingSignals.add(signal)
         persistRuntimeScheduledMeetingSignals()
-        meetingDataVersion.value = meetingDataVersion.value + 1
+        bumpRuntimeDataVersion()
         return signal
+    }
+
+    fun addRuntimeChatMessage(meetingId: String, content: String): Message {
+        val currentUser = getCurrentUser()
+        val timestamp = System.currentTimeMillis()
+        val message = Message(
+            messageId = "runtime_msg_${timestamp}_${runtimeChatMessages.size + 1}",
+            meetingId = meetingId,
+            senderId = currentUser.userId,
+            senderName = currentUser.username,
+            content = content,
+            timestamp = timestamp
+        )
+        runtimeChatMessages.add(message)
+        persistRuntimeChatMessages()
+        bumpRuntimeDataVersion()
+        return message
+    }
+
+    fun recordJoinHistoryUsed(meetingNumber: String, title: String? = null) {
+        val now = System.currentTimeMillis()
+        val existingIndex = runtimeJoinHistoryEntries.indexOfFirst { it.meetingNumber == meetingNumber }
+        val resolvedTitle = when {
+            !title.isNullOrBlank() -> title
+            existingIndex >= 0 -> runtimeJoinHistoryEntries[existingIndex].title
+            else -> "${getCurrentUser().username}'s Zoom Meeting"
+        }
+
+        val updatedEntry = JoinMeetingHistoryEntry(
+            title = resolvedTitle,
+            meetingNumber = meetingNumber,
+            lastUsedAt = now
+        )
+
+        if (existingIndex >= 0) {
+            runtimeJoinHistoryEntries.removeAt(existingIndex)
+        }
+        runtimeJoinHistoryEntries.add(0, updatedEntry)
+
+        runtimeJoinHistoryActions.add(
+            JoinMeetingHistoryAction(
+                actionId = "join_history_${now}_${runtimeJoinHistoryActions.size + 1}",
+                actionType = "USED",
+                meetingNumber = meetingNumber,
+                title = resolvedTitle,
+                occurredAt = now
+            )
+        )
+
+        persistRuntimeJoinHistorySignal()
+        bumpRuntimeDataVersion()
+    }
+
+    fun clearJoinHistoryEntries() {
+        runtimeJoinHistoryEntries.clear()
+        val now = System.currentTimeMillis()
+        runtimeJoinHistoryActions.add(
+            JoinMeetingHistoryAction(
+                actionId = "join_history_${now}_${runtimeJoinHistoryActions.size + 1}",
+                actionType = "CLEARED",
+                occurredAt = now
+            )
+        )
+        persistRuntimeJoinHistorySignal()
+        bumpRuntimeDataVersion()
+    }
+
+    fun recordMeetingAction(
+        actionType: String,
+        meetingId: String,
+        targetUserIds: List<String> = emptyList(),
+        note: String = ""
+    ): MeetingActionSignal {
+        val timestamp = System.currentTimeMillis()
+        val action = MeetingActionSignal(
+            actionId = "meeting_action_${timestamp}_${runtimeMeetingActions.size + 1}",
+            meetingId = meetingId,
+            actionType = actionType,
+            targetUserIds = targetUserIds,
+            note = note,
+            occurredAt = timestamp
+        )
+        runtimeMeetingActions.add(action)
+        persistRuntimeMeetingActions()
+        bumpRuntimeDataVersion()
+        return action
     }
 
     fun isRuntimeScheduledMeeting(meetingId: String): Boolean {
         return meetingId.startsWith(runtimeMeetingIdPrefix)
     }
 
-    private fun resetRuntimeScheduledMeetingSignals() {
+    private fun resetRuntimeSignalData() {
         scheduledMeetingSignals = mutableListOf()
+        runtimeChatMessages = mutableListOf()
+        runtimeJoinHistoryEntries = defaultJoinHistoryEntries()
+        runtimeJoinHistoryActions = mutableListOf()
+        runtimeMeetingActions = mutableListOf()
+
         persistRuntimeScheduledMeetingSignals()
-        meetingDataVersion.value = meetingDataVersion.value + 1
+        persistRuntimeChatMessages()
+        persistRuntimeJoinHistorySignal()
+        persistRuntimeMeetingActions()
+        bumpRuntimeDataVersion()
+    }
+
+    private fun defaultJoinHistoryEntries(): MutableList<JoinMeetingHistoryEntry> {
+        return mutableListOf(
+            JoinMeetingHistoryEntry(
+                title = "CL L's Zoom Meeting",
+                meetingNumber = "994888108",
+                lastUsedAt = null
+            ),
+            JoinMeetingHistoryEntry(
+                title = "CL L's Zoom Meeting",
+                meetingNumber = "820112935",
+                lastUsedAt = null
+            ),
+            JoinMeetingHistoryEntry(
+                title = "CL L's Zoom Meeting",
+                meetingNumber = "867558037",
+                lastUsedAt = null
+            ),
+            JoinMeetingHistoryEntry(
+                title = "CL L's Zoom Meeting",
+                meetingNumber = "834821295",
+                lastUsedAt = null
+            )
+        )
     }
 
     private fun signalToMeeting(signal: ScheduledMeetingSignal): Meeting {
@@ -176,11 +330,49 @@ object DataRepository {
 
     private fun persistRuntimeScheduledMeetingSignals() {
         runCatching {
-            runtimeSignalFile().writeText(gson.toJson(scheduledMeetingSignals))
+            runtimeScheduledMeetingFile().writeText(gson.toJson(scheduledMeetingSignals))
         }
     }
 
-    private fun runtimeSignalFile(): File {
-        return File(appContext.filesDir, runtimeSignalFileName)
+    private fun persistRuntimeChatMessages() {
+        runCatching {
+            runtimeChatMessageFile().writeText(gson.toJson(runtimeChatMessages))
+        }
+    }
+
+    private fun persistRuntimeJoinHistorySignal() {
+        runCatching {
+            val payload = JoinMeetingHistorySignal(
+                entries = runtimeJoinHistoryEntries,
+                actions = runtimeJoinHistoryActions
+            )
+            runtimeJoinHistoryFile().writeText(gson.toJson(payload))
+        }
+    }
+
+    private fun persistRuntimeMeetingActions() {
+        runCatching {
+            runtimeMeetingActionFile().writeText(gson.toJson(runtimeMeetingActions))
+        }
+    }
+
+    private fun runtimeScheduledMeetingFile(): File {
+        return File(appContext.filesDir, runtimeScheduledMeetingFileName)
+    }
+
+    private fun runtimeChatMessageFile(): File {
+        return File(appContext.filesDir, runtimeChatMessageFileName)
+    }
+
+    private fun runtimeJoinHistoryFile(): File {
+        return File(appContext.filesDir, runtimeJoinHistoryFileName)
+    }
+
+    private fun runtimeMeetingActionFile(): File {
+        return File(appContext.filesDir, runtimeMeetingActionFileName)
+    }
+
+    private fun bumpRuntimeDataVersion() {
+        runtimeDataVersion.value = runtimeDataVersion.value + 1
     }
 }

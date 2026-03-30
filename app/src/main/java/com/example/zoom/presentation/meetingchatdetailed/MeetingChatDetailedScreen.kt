@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.theme.ZoomBlue
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -143,15 +144,28 @@ fun MeetingChatDetailedOverlay(
                 onSendClick = {
                     if (inputText.isBlank()) return@MeetingChatComposer
 
-                    val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
+                    val meetingId = DataRepository.getCurrentMeeting().meetingId
+                    val savedMessage = DataRepository.addRuntimeChatMessage(
+                        meetingId = meetingId,
+                        content = inputText.trim()
+                    )
+                    val senderInitials = savedMessage.senderName
+                        .split(" ")
+                        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+                        .take(2)
+                        .joinToString("")
+                        .ifBlank { "?" }
+                    val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
+
                     localMessages = localMessages + ChatMessageUi(
-                        messageId = "local_${System.currentTimeMillis()}",
-                        senderName = "James Wilson",
-                        senderInitials = "JW",
-                        content = inputText.trim(),
-                        timestamp = timeFormat.format(Date()),
+                        messageId = savedMessage.messageId,
+                        senderName = savedMessage.senderName,
+                        senderInitials = senderInitials,
+                        content = savedMessage.content,
+                        timestamp = timeFormat.format(Date(savedMessage.timestamp)),
                         isSelf = true
                     )
+
                     inputText = ""
                 }
             )

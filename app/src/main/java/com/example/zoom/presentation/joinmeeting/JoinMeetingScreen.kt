@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.components.ZoomActionPageTopBar
 import com.example.zoom.ui.components.ZoomInsetDivider
 import com.example.zoom.ui.components.ZoomPageSurface
@@ -102,7 +103,10 @@ fun JoinMeetingScreen(
                             onValueChange = { input ->
                                 meetingId = input.filter { it.isDigit() }.take(9)
                             },
-                            onHistoryClick = { showHistorySheet = true }
+                            onHistoryClick = {
+                                historyItems = currentJoinHistoryItems()
+                                showHistorySheet = true
+                            }
                         )
                         Text(
                             text = "Join with a personal link name",
@@ -124,7 +128,14 @@ fun JoinMeetingScreen(
 
                     ZoomPrimaryActionButton(
                         text = "Join",
-                        onClick = onJoinMeetingClick,
+                        onClick = {
+                            DataRepository.recordJoinHistoryUsed(
+                                meetingNumber = meetingId,
+                                title = "${DataRepository.getCurrentUser().username}'s Zoom Meeting"
+                            )
+                            historyItems = currentJoinHistoryItems()
+                            onJoinMeetingClick()
+                        },
                         enabled = isMeetingIdValid,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
@@ -166,9 +177,17 @@ fun JoinMeetingScreen(
                     items = historyItems,
                     onItemClick = { item ->
                         meetingId = item.meetingNumber
+                        DataRepository.recordJoinHistoryUsed(
+                            meetingNumber = item.meetingNumber,
+                            title = item.title
+                        )
+                        historyItems = currentJoinHistoryItems()
                         showHistorySheet = false
                     },
-                    onClearHistory = { historyItems = emptyList() },
+                    onClearHistory = {
+                        DataRepository.clearJoinHistoryEntries()
+                        historyItems = currentJoinHistoryItems()
+                    },
                     onDoneClick = { showHistorySheet = false },
                     onDismiss = { showHistorySheet = false }
                 )
@@ -367,4 +386,13 @@ private fun JoinMeetingHistoryRow(
 
 private fun formatMeetingNumber(value: String): String {
     return value.chunked(3).joinToString(" ")
+}
+
+private fun currentJoinHistoryItems(): List<JoinMeetingHistoryItem> {
+    return DataRepository.getJoinHistoryEntries().map { entry ->
+        JoinMeetingHistoryItem(
+            title = entry.title,
+            meetingNumber = entry.meetingNumber
+        )
+    }
 }

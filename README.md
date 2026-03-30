@@ -2,6 +2,38 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-30 Runtime Business Signals JSON Integration)
+
+Aligned core mutable business behavior with the same runtime-JSON policy used by scheduled meetings:
+
+1. Added unified runtime signal persistence in `DataRepository` and split files by domain:
+   - `runtime_scheduled_meetings.json`
+   - `runtime_chat_messages.json`
+   - `runtime_join_history.json`
+   - `runtime_meeting_actions.json`
+2. Added startup reset for all runtime signal files inside `DataRepository.init(...)`, so every Android Studio `Run` (new app process) starts from clean runtime records.
+3. Kept static contact data unchanged (`assets/data/users.json` remains read-only and is not cleared on restart).
+4. Wired in-meeting chat send actions to persist into `runtime_chat_messages.json` instead of local-only overlay state.
+5. Wired Join Meeting history to repository-backed runtime data:
+   - selecting a history entry updates usage state
+   - tapping `Join` records usage
+   - `Clear history` persists clear action
+6. Wired meeting participant core actions to runtime action logs (`runtime_meeting_actions.json`):
+   - `Mute all`
+   - `Ask all to unmute`
+   - `Invite contacts` confirm
+
+### Modified files
+- `app/src/main/java/com/example/zoom/data/DataRepository.kt`
+- `app/src/main/java/com/example/zoom/model/JoinMeetingHistorySignal.kt`
+- `app/src/main/java/com/example/zoom/model/MeetingActionSignal.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingchatdetailed/MeetingChatDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingchatdetailed/MeetingChatDetailedScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/joinmeeting/JoinMeetingPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/joinmeeting/JoinMeetingScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedOverlay.kt`
+- `README.md`
+
 ## Latest Update (2026-03-30 Time Zone Alphabet Index Interaction Fix)
 
 Refined the `Schedule Meeting Time Zone Page` right-side alphabet index so it now behaves as a real jump navigator:

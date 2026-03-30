@@ -1,5 +1,7 @@
 package com.example.zoom.presentation.joinmeeting
 
+import com.example.zoom.data.DataRepository
+
 class JoinMeetingPresenter(
     private val view: JoinMeetingContract.View
 ) : JoinMeetingContract.Presenter {
@@ -8,24 +10,12 @@ class JoinMeetingPresenter(
             JoinMeetingUiState(
                 audioOff = false,
                 videoOff = true,
-                historyItems = listOf(
+                historyItems = DataRepository.getJoinHistoryEntries().map { item ->
                     JoinMeetingHistoryItem(
-                        title = "CL L's Zoom Meeting",
-                        meetingNumber = "994888108"
-                    ),
-                    JoinMeetingHistoryItem(
-                        title = "CL L's Zoom Meeting",
-                        meetingNumber = "820112935"
-                    ),
-                    JoinMeetingHistoryItem(
-                        title = "CL L's Zoom Meeting",
-                        meetingNumber = "867558037"
-                    ),
-                    JoinMeetingHistoryItem(
-                        title = "CL L's Zoom Meeting",
-                        meetingNumber = "834821295"
+                        title = item.title,
+                        meetingNumber = item.meetingNumber
                     )
-                )
+                }
             )
         )
     }
