@@ -1,6 +1,7 @@
 package com.example.zoom.presentation.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.Meeting
+import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.components.ExpansionMenuItemUiState
 import com.example.zoom.ui.components.ExpansionMenuOverlay
 import com.example.zoom.ui.components.ZoomTopBar
@@ -53,9 +56,11 @@ fun HomeScreen(
     onSearchClick: () -> Unit,
     onHostMeetingClick: () -> Unit,
     onJoinMeetingClick: () -> Unit,
-    onScheduleMeetingClick: () -> Unit
+    onScheduleMeetingClick: () -> Unit,
+    onScheduledMeetingStartClick: () -> Unit
 ) {
     val upcomingMeetings = remember { mutableStateListOf<Meeting>() }
+    val meetingDataVersion by DataRepository.observeMeetingDataVersion().collectAsState()
     var showShareOverlay by remember { mutableStateOf(false) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     val expansionMenuItems = remember {
@@ -76,8 +81,10 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        HomePresenter(view).loadData()
+    val presenter = remember(view) { HomePresenter(view) }
+
+    LaunchedEffect(meetingDataVersion) {
+        presenter.loadData()
     }
 
     Scaffold(
@@ -156,7 +163,11 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     items(upcomingMeetings) { meeting ->
-                        MeetingItem(meeting)
+                        MeetingItem(
+                            meeting = meeting,
+                            showStartButton = DataRepository.isRuntimeScheduledMeeting(meeting.meetingId),
+                            onStartClick = onScheduledMeetingStartClick
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
@@ -178,7 +189,11 @@ fun HomeScreen(
 }
 
 @Composable
-private fun MeetingItem(meeting: Meeting) {
+private fun MeetingItem(
+    meeting: Meeting,
+    showStartButton: Boolean,
+    onStartClick: () -> Unit
+) {
     val sdf = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -196,7 +211,7 @@ private fun MeetingItem(meeting: Meeting) {
                     .background(ZoomBlue, RoundedCornerShape(2.dp))
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(meeting.topic, fontWeight = FontWeight.Medium, fontSize = 15.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -204,6 +219,17 @@ private fun MeetingItem(meeting: Meeting) {
                         if (meeting.endTime != null) " - ${sdf.format(Date(meeting.endTime))}" else "",
                     fontSize = 13.sp,
                     color = Color.Gray
+                )
+            }
+            if (showStartButton) {
+                Text(
+                    text = "Start",
+                    color = ZoomBlue,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .background(Color(0xFFEAF3FF), RoundedCornerShape(16.dp))
+                        .clickable(onClick = onStartClick)
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 )
             }
         }

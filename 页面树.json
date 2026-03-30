@@ -93,7 +93,16 @@
                     "Meeting Safe Driving Mode Page": {}
                 }
             },
-            "Schedule Meeting Page": {},
+            "Schedule Meeting Page": {
+                "Schedule Meeting Starts Time Page": {},
+                "Schedule Meeting Duration Page": {},
+                "Schedule Meeting Time Zone Page": {},
+                "Schedule Meeting Repeat Page": {},
+                "Schedule Meeting Calendar Page": {},
+                "Schedule Meeting Encrypiton Page": {},
+                "Schedule Meeting Add invitees Page": {}
+            },
+            "Home Page After Schedule": {},
             "Share Page": {}
         },
         "Team Chat Page": {},

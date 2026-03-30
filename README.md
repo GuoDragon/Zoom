@@ -2,6 +2,45 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-03-30 Time Zone Alphabet Index Interaction Fix)
+
+Refined the `Schedule Meeting Time Zone Page` right-side alphabet index so it now behaves as a real jump navigator:
+
+1. Replaced the right-side alphabet from passive display text with clickable `A-Z` index entries.
+2. Added list scroll targeting via `LazyListState.animateScrollToItem(...)` so tapping a letter jumps to the corresponding timezone section.
+3. Ensured all 26 letters provide feedback: when a tapped letter has no direct section, it now jumps to the nearest available letter section.
+4. Added active-letter highlight feedback on the side index during navigation/scrolling.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingSubPages.kt`
+- `README.md`
+
+## Latest Update (2026-03-30 Schedule Meeting Child Pages And Runtime Signal JSON)
+
+Implemented the latest schedule-meeting expansion task from the requirements document:
+
+1. Completed all newly added child pages under `Schedule Meeting`:
+   - `Starts Time` and `Duration` are now popup pickers.
+   - `Time Zone`, `Repeat`, `Calendar`, `Encryption`, and `Add invitees` are now full-page sub-screens.
+2. `Schedule Meeting Time Zone Page` now uses the full IANA zone list and shows readable city names with GMT offsets.
+3. Wired the `Save` action on `Schedule Meeting` to persist a runtime meeting signal and return to `Home`.
+4. Added `Home Page After Schedule` behavior: after scheduling, Home now shows the new scheduled record with a `Start` action.
+5. Wired the `Start` action in Home scheduled records into the existing `Meeting Preview Page` flow, then continuing to in-meeting as before.
+6. Added runtime signal persistence file `scheduled_meetings_runtime.json` in app-internal `files/`, and reset it on each app launch to restore initial state.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/model/ScheduledMeetingSignal.kt`
+- `app/src/main/java/com/example/zoom/data/DataRepository.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingFormatters.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingDialogs.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingSubPages.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `app/src/main/java/com/example/zoom/navigation/NavGraph.kt`
+- `README.md`
+
 ## Latest Update (2026-03-26 Leave Meeting Detailed Exit Fix)
 
 Implemented the latest meeting-exit behavior fix from the requirements document:

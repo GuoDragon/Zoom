@@ -42,7 +42,8 @@ fun ZoomNavGraph(
                 onSearchClick = { navController.navigate(Screen.Search.route) },
                 onHostMeetingClick = { navController.navigate(Screen.HostMeeting.route) },
                 onJoinMeetingClick = { navController.navigate(Screen.JoinMeeting.route) },
-                onScheduleMeetingClick = { navController.navigate(Screen.ScheduleMeeting.route) }
+                onScheduleMeetingClick = { navController.navigate(Screen.ScheduleMeeting.route) },
+                onScheduledMeetingStartClick = { navController.navigate(Screen.MeetingPreview.route) }
             )
         }
         composable(Screen.TeamChat.route) {
@@ -152,7 +153,10 @@ fun ZoomNavGraph(
             )
         }
         composable(Screen.ScheduleMeeting.route) {
-            ScheduleMeetingScreen(onBackClick = { navController.popBackStack() })
+            ScheduleMeetingScreen(
+                onBackClick = { navController.popBackStack() },
+                onSaveSuccess = { navController.popBackStack() }
+            )
         }
         composable(Screen.Profile.route) {
             ProfileScreen(
