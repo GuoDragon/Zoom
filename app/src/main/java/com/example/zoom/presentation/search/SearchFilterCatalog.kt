@@ -1,6 +1,5 @@
 package com.example.zoom.presentation.search
 
-import com.example.zoom.data.DataRepository
 import java.util.Calendar
 
 internal enum class SearchFilterDisplayMode {
@@ -37,15 +36,9 @@ internal data class FilterSelectionState(
 )
 
 internal object SearchFilterCatalog {
-    fun build(): Map<SearchCategory, List<FilterConfig>> {
+    fun build(currentUserInitial: String): Map<SearchCategory, List<FilterConfig>> {
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-        val currentUser = DataRepository.getCurrentUser()
-        val currentUserInitial = currentUser.username
-            .split(" ")
-            .mapNotNull { it.firstOrNull()?.uppercaseChar() }
-            .take(2)
-            .joinToString("")
-            .ifBlank { "ME" }
+        val resolvedUserInitial = currentUserInitial.ifBlank { "ME" }
 
         val commonDateOptions = listOf(
             FilterOptionConfig("any_time", "Any time"),
@@ -60,17 +53,17 @@ internal object SearchFilterCatalog {
         val messageScopeOptions = listOf(
             FilterOptionConfig("all", "All", SearchSheetOptionLeading.Conversation),
             FilterOptionConfig("bookmarked", "Bookmarked messages", SearchSheetOptionLeading.Bookmark),
-            FilterOptionConfig("my_space", "You", SearchSheetOptionLeading.Initials(currentUserInitial))
+            FilterOptionConfig("my_space", "You", SearchSheetOptionLeading.Initials(resolvedUserInitial))
         )
 
         val peopleOptions = listOf(
             FilterOptionConfig("anyone", "Anyone", SearchSheetOptionLeading.Person),
-            FilterOptionConfig("me", "You", SearchSheetOptionLeading.Initials(currentUserInitial))
+            FilterOptionConfig("me", "You", SearchSheetOptionLeading.Initials(resolvedUserInitial))
         )
 
         val ownerOptions = listOf(
             FilterOptionConfig("anyone", "Anyone", SearchSheetOptionLeading.Conversation),
-            FilterOptionConfig("me", currentUserInitial, SearchSheetOptionLeading.Initials(currentUserInitial))
+            FilterOptionConfig("me", resolvedUserInitial, SearchSheetOptionLeading.Initials(resolvedUserInitial))
         )
 
         return mapOf(
@@ -113,7 +106,7 @@ internal object SearchFilterCatalog {
                             defaultOptionId = "anyone",
                             options = listOf(
                                 FilterOptionConfig("anyone", "Anyone", SearchSheetOptionLeading.Conversation),
-                                FilterOptionConfig("me", "You", SearchSheetOptionLeading.Initials(currentUserInitial))
+                                FilterOptionConfig("me", "You", SearchSheetOptionLeading.Initials(resolvedUserInitial))
                             )
                         )
                     )

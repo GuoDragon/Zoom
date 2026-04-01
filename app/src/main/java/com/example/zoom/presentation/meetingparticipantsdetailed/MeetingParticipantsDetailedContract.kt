@@ -42,5 +42,17 @@ interface MeetingParticipantsDetailedContract {
 
     interface Presenter {
         fun loadData()
+        fun muteAllParticipants(
+            participants: List<MeetingParticipantUi>,
+            meetingId: String
+        ): List<MeetingParticipantUi>
+        fun askAllToUnmute(
+            participants: List<MeetingParticipantUi>,
+            meetingId: String
+        ): List<MeetingParticipantUi>
+        fun inviteContacts(
+            meetingId: String,
+            selectedContactIds: Set<String>
+        )
     }
 }

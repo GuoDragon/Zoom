@@ -6,5 +6,7 @@ data class MeetingActionSignal(
     val actionType: String,
     val targetUserIds: List<String> = emptyList(),
     val note: String = "",
+    val screenSharingEnabled: Boolean? = null,
+    val shareCode: String = "",
     val occurredAt: Long
 )

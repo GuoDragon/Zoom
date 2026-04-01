@@ -36,19 +36,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.model.Meeting
-import com.example.zoom.data.DataRepository
+import com.example.zoom.R
+import com.example.zoom.presentation.sharepage.SharePageScreen
 import com.example.zoom.ui.components.ExpansionMenuItemUiState
 import com.example.zoom.ui.components.ExpansionMenuOverlay
+import com.example.zoom.ui.components.MeetingSessionConfig
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
 import com.example.zoom.ui.theme.ZoomOrange
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -57,31 +56,31 @@ fun HomeScreen(
     onHostMeetingClick: () -> Unit,
     onJoinMeetingClick: () -> Unit,
     onScheduleMeetingClick: () -> Unit,
-    onScheduledMeetingStartClick: () -> Unit
+    onShareMeetingClick: (MeetingSessionConfig) -> Unit,
+    onScheduledMeetingClick: (String) -> Unit
 ) {
-    val upcomingMeetings = remember { mutableStateListOf<Meeting>() }
-    val meetingDataVersion by DataRepository.observeMeetingDataVersion().collectAsState()
+    val upcomingMeetings = remember { mutableStateListOf<HomeMeetingCardUi>() }
+    var avatarInitial by remember { mutableStateOf("?") }
     var showShareOverlay by remember { mutableStateOf(false) }
     var showMoreOverlay by remember { mutableStateOf(false) }
-    val expansionMenuItems = remember {
-        listOf(
-            ExpansionMenuItemUiState("Meet with Personal ID", "ID"),
-            ExpansionMenuItemUiState("Scan QR code", "QR"),
-            ExpansionMenuItemUiState("Transfer a meeting", "TR")
-        )
-    }
+    val expansionMenuItems = listOf(
+        ExpansionMenuItemUiState(stringResource(R.string.home_expansion_personal_id), "ID"),
+        ExpansionMenuItemUiState(stringResource(R.string.home_expansion_scan_qr), "QR"),
+        ExpansionMenuItemUiState(stringResource(R.string.home_expansion_transfer_meeting), "TR")
+    )
 
     val view = remember {
         object : HomeContract.View {
-            override fun showUpcomingMeetings(meetings: List<Meeting>) {
+            override fun showHomeState(state: HomeUiState) {
+                avatarInitial = state.currentUser.username.firstOrNull()?.uppercase() ?: "?"
                 upcomingMeetings.clear()
-                upcomingMeetings.addAll(meetings)
+                upcomingMeetings.addAll(state.upcomingMeetings)
             }
-            override fun showCurrentUser(user: com.example.zoom.model.User) = Unit
         }
     }
 
     val presenter = remember(view) { HomePresenter(view) }
+    val meetingDataVersion by presenter.observeRuntimeVersion().collectAsState()
 
     LaunchedEffect(meetingDataVersion) {
         presenter.loadData()
@@ -90,7 +89,8 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             ZoomTopBar(
-                title = "Zoom",
+                title = stringResource(R.string.app_name),
+                avatarInitial = avatarInitial,
                 onAvatarClick = onAvatarClick,
                 onSearchClick = onSearchClick,
                 onMoreClick = { showMoreOverlay = true }
@@ -115,25 +115,25 @@ fun HomeScreen(
                     ) {
                         HomeActionCard(
                             icon = Icons.Default.Add,
-                            label = "Meet",
+                            label = stringResource(R.string.home_action_meet),
                             color = ZoomOrange,
                             onClick = onHostMeetingClick
                         )
                         HomeActionCard(
                             icon = Icons.AutoMirrored.Filled.Login,
-                            label = "Join",
+                            label = stringResource(R.string.home_action_join),
                             color = ZoomBlue,
                             onClick = onJoinMeetingClick
                         )
                         HomeActionCard(
                             icon = Icons.Default.CalendarMonth,
-                            label = "Schedule",
+                            label = stringResource(R.string.home_action_schedule),
                             color = ZoomBlue,
                             onClick = onScheduleMeetingClick
                         )
                         HomeActionCard(
                             icon = Icons.AutoMirrored.Filled.ScreenShare,
-                            label = "Share",
+                            label = stringResource(R.string.home_action_share),
                             color = ZoomBlue,
                             onClick = { showShareOverlay = true }
                         )
@@ -147,10 +147,14 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("No upcoming meetings", fontSize = 16.sp, color = Color.Gray)
+                                Text(
+                                    stringResource(R.string.home_no_upcoming_meetings),
+                                    fontSize = 16.sp,
+                                    color = Color.Gray
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "Your upcoming meetings will appear here",
+                                    stringResource(R.string.home_upcoming_meetings_hint),
                                     fontSize = 14.sp,
                                     color = Color.LightGray
                                 )
@@ -159,14 +163,17 @@ fun HomeScreen(
                     }
                 } else {
                     item {
-                        Text("Upcoming Meetings", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(
+                            stringResource(R.string.home_upcoming_meetings_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     items(upcomingMeetings) { meeting ->
                         MeetingItem(
                             meeting = meeting,
-                            showStartButton = DataRepository.isRuntimeScheduledMeeting(meeting.meetingId),
-                            onStartClick = onScheduledMeetingStartClick
+                            onClick = onScheduledMeetingClick
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -174,13 +181,19 @@ fun HomeScreen(
             }
 
             if (showShareOverlay) {
-                ShareScreenOverlay(onDismiss = { showShareOverlay = false })
+                SharePageScreen(
+                    onDismiss = { showShareOverlay = false },
+                    onShareSuccess = { config ->
+                        showShareOverlay = false
+                        onShareMeetingClick(config)
+                    }
+                )
             }
 
             if (showMoreOverlay) {
                 ExpansionMenuOverlay(
                     items = expansionMenuItems,
-                    footerText = "Add a calendar",
+                    footerText = stringResource(R.string.home_expansion_footer_add_calendar),
                     onDismiss = { showMoreOverlay = false }
                 )
             }
@@ -190,13 +203,13 @@ fun HomeScreen(
 
 @Composable
 private fun MeetingItem(
-    meeting: Meeting,
-    showStartButton: Boolean,
-    onStartClick: () -> Unit
+    meeting: HomeMeetingCardUi,
+    onClick: (String) -> Unit
 ) {
-    val sdf = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(meeting.meeting.meetingId) },
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -212,24 +225,12 @@ private fun MeetingItem(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(meeting.topic, fontWeight = FontWeight.Medium, fontSize = 15.sp)
+                Text(meeting.meeting.topic, fontWeight = FontWeight.Medium, fontSize = 15.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    sdf.format(Date(meeting.startTime)) +
-                        if (meeting.endTime != null) " - ${sdf.format(Date(meeting.endTime))}" else "",
+                    text = meeting.timeLabel,
                     fontSize = 13.sp,
                     color = Color.Gray
-                )
-            }
-            if (showStartButton) {
-                Text(
-                    text = "Start",
-                    color = ZoomBlue,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .background(Color(0xFFEAF3FF), RoundedCornerShape(16.dp))
-                        .clickable(onClick = onStartClick)
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 )
             }
         }

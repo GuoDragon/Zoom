@@ -29,7 +29,8 @@ import com.example.zoom.ui.theme.ZoomTextSecondary
 @Composable
 fun ScheduleMeetingScreen(
     onBackClick: () -> Unit,
-    onSaveSuccess: () -> Unit
+    editingMeetingId: String?,
+    onSaveSuccess: (String) -> Unit
 ) {
     var initialState by remember { mutableStateOf<ScheduleMeetingInitialState?>(null) }
     var draft by remember { mutableStateOf<ScheduleMeetingDraft?>(null) }
@@ -46,15 +47,15 @@ fun ScheduleMeetingScreen(
                 draft = state.draft
             }
 
-            override fun onMeetingSaved() {
-                onSaveSuccess()
+            override fun onMeetingSaved(meetingId: String) {
+                onSaveSuccess(meetingId)
             }
         }
     }
     val presenter = remember(view) { ScheduleMeetingPresenter(view) }
 
-    LaunchedEffect(presenter) {
-        presenter.loadData()
+    LaunchedEffect(presenter, editingMeetingId) {
+        presenter.loadData(editingMeetingId)
     }
 
     val screenState = initialState ?: return
@@ -141,7 +142,7 @@ fun ScheduleMeetingScreen(
                 title = "Schedule meeting",
                 onCancelClick = onBackClick,
                 actionText = "Save",
-                onActionClick = { presenter.saveMeeting(screenDraft) }
+                onActionClick = { presenter.saveMeeting(screenDraft, editingMeetingId) }
             )
         }
     ) { padding ->

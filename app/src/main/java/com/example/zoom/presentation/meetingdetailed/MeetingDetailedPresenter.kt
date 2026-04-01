@@ -8,6 +8,7 @@ class MeetingDetailedPresenter(
 ) : MeetingDetailedContract.Presenter {
     override fun loadData() {
         val currentUser = DataRepository.getCurrentUser()
+        val meeting = DataRepository.getCurrentMeeting()
         val initials = currentUser.username
             .split(" ")
             .mapNotNull { it.firstOrNull()?.uppercaseChar() }
@@ -15,7 +16,6 @@ class MeetingDetailedPresenter(
             .joinToString("")
             .ifBlank { "ME" }
 
-        val meeting = DataRepository.getCurrentMeeting()
         val users = DataRepository.getParticipantsForMeeting(meeting.meetingId)
         val participantUis = users.mapIndexed { index, user ->
             val pInitials = user.username
@@ -34,7 +34,7 @@ class MeetingDetailedPresenter(
 
         view.showContent(
             MeetingDetailedUiState(
-                title = "${currentUser.username}'s Zoom Meeting",
+                title = meeting.topic,
                 participantInitials = initials,
                 participantLabel = currentUser.username,
                 participants = participantUis

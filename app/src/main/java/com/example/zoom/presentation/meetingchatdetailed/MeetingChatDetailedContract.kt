@@ -7,6 +7,7 @@ interface MeetingChatDetailedContract {
 
     interface Presenter {
         fun loadData()
+        fun sendMessage(content: String): ChatMessageUi?
     }
 }
 

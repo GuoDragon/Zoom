@@ -102,12 +102,16 @@
                 "Schedule Meeting Encrypiton Page": {},
                 "Schedule Meeting Add invitees Page": {}
             },
-            "Home Page After Schedule": {},
+            "Home Page After Schedule": {
+                "Schedule Meeting Deatiled Page": {}
+            },
             "Share Page": {}
         },
         "Team Chat Page": {},
         "Documents Page": {},
-        "Calendar Page": {},
+        "Calendar Page": {
+            "Schedule Meeting Deatiled in Calendar Page": {}
+        },
         "Mail Page": {},
         "Expansion Page": {},
         "More Page": {}

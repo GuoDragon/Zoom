@@ -3,12 +3,12 @@ package com.example.zoom.presentation.schedulemeeting
 interface ScheduleMeetingContract {
     interface View {
         fun showInitialState(state: ScheduleMeetingInitialState)
-        fun onMeetingSaved()
+        fun onMeetingSaved(meetingId: String)
     }
 
     interface Presenter {
-        fun loadData()
-        fun saveMeeting(draft: ScheduleMeetingDraft)
+        fun loadData(editingMeetingId: String?)
+        fun saveMeeting(draft: ScheduleMeetingDraft, editingMeetingId: String?)
     }
 }
 

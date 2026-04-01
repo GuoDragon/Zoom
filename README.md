@@ -2,6 +2,260 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-04-01 Share Page Input Flow + Screen Share Runtime Signal)
+
+Implemented the latest `开发需求.md` current task for `Share Page`:
+
+1. `Home` `Share` action now opens a dedicated MVP `Share Page` overlay instead of the old local fake-keyboard dialog.
+2. `Share Page` behavior now matches the requested flow:
+   - tapping the input uses the system keyboard
+   - only numeric input is accepted
+   - `OK` is enabled only after entering 8 digits
+   - tapping `OK` enters the meeting page directly
+3. Added runtime screen-share backend signal tracking:
+   - entering from `Share Page` writes a `SCREEN_SHARE_STATUS_CHANGED` action with `screenSharingEnabled=true`
+   - leaving that meeting writes a matching `screenSharingEnabled=false` action
+   - UI does not add extra visible share-state changes
+4. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/common/constants/RuntimeSignalConstants.kt`
+- `app/src/main/java/com/example/zoom/data/DataRepository.kt`
+- `app/src/main/java/com/example/zoom/model/MeetingActionSignal.kt`
+- `app/src/main/java/com/example/zoom/navigation/Routes.kt`
+- `app/src/main/java/com/example/zoom/navigation/NavGraph.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeActionComponents.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingpreview/MeetingPreviewScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/sharepage/SharePageContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/sharepage/SharePagePresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/sharepage/SharePageScreen.kt`
+- `app/src/main/java/com/example/zoom/ui/components/MeetingSessionComponents.kt`
+- `README.md`
+
+## Latest Update (2026-04-01 Schedule Detailed Invite Message Alignment)
+
+Aligned the `Send a message` text in `Schedule Meeting Deatiled Page` invite popup with in-meeting `Meetint Participents Add Page`:
+
+1. Added shared invite message builder so both pages use the same template and line structure.
+2. Updated `MeetingParticipantsDetailedPresenter` to use the shared builder.
+3. Updated `ScheduleMeetingDetailedPresenter`/`ScheduleMeetingDetailedUiState`/`ScheduleMeetingDetailedScreen` so popup message content comes from the same source.
+4. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/common/format/InviteMessageFormatter.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedScreen.kt`
+- `README.md`
+
+## Latest Update (2026-03-31 Schedule Detail Invite Popup + Calendar Description)
+
+Implemented the latest `开发需求.md` current task adjustments:
+
+1. `Schedule Meeting Deatiled Page` invite popup now matches the meeting participants add flow structure, with only two first-level options:
+   - `Send a message`
+   - `Invite contacts`
+   - `Copy invite link` is removed from this page flow.
+2. `Schedule Meeting Deatiled in Calendar Page` now displays `Description` content below the core meeting fields.
+   - Description is built from existing meeting/schedule signal data in presenter layer (no model schema expansion).
+3. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailedcalendar/ScheduleMeetingDetailedInCalendarContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailedcalendar/ScheduleMeetingDetailedInCalendarPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailedcalendar/ScheduleMeetingDetailedInCalendarScreen.kt`
+- `README.md`
+
+## Latest Update (2026-03-31 Home Scheduled Time Alignment)
+
+Aligned Home scheduled-meeting time text with actual schedule settings:
+
+1. Home meeting card time text now comes from presenter-provided UI state (`timeLabel`) instead of local UI formatting.
+2. For runtime scheduled meetings, Home now builds time text from schedule signal fields:
+   - `startTime` + `timeZoneId` via `formatScheduleStartLabel(...)`
+   - `durationMinutes` via `formatDurationLabel(...)`
+   - Final display: `starts label · duration`
+3. Static asset meetings keep the previous `HH:mm` / `HH:mm - HH:mm` display style.
+4. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/presentation/home/HomeContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomePresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `README.md`
+
+## Latest Update (2026-03-31 Schedule Meeting Flow Tuning + Calendar Detailed Page)
+
+Implemented the new `开发需求.md` latest task adjustments:
+
+1. `Schedule meeting` save behavior changed:
+   - Saving a new scheduled meeting now returns directly to `Home`.
+2. `Home` scheduled records interaction changed:
+   - Removed the right-side `Start` button from scheduled meeting rows.
+   - Entire meeting row is now clickable and opens `Schedule Meeting Deatiled Page`.
+3. `Schedule Meeting Deatiled Page` edit flow added:
+   - Added top-right `Edit` action.
+   - `Edit` opens `Schedule Meeting Page` for the same meeting record.
+   - Editing save writes back to the same runtime scheduled signal and returns to the detailed page.
+4. Meeting preview leave issue fixed:
+   - Leaving from preview now uses route-agnostic back-stack exit logic, so exit works from schedule/join/host entry paths.
+5. Added `Schedule Meeting Deatiled in Calendar Page`:
+   - Calendar meeting cards are now clickable.
+   - Clicking a meeting in Calendar opens a dedicated calendar detailed page route.
+6. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/navigation/Routes.kt`
+- `app/src/main/java/com/example/zoom/navigation/NavGraph.kt`
+- `app/src/main/java/com/example/zoom/data/DataRepository.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomePresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/calendar/CalendarContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/calendar/CalendarPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/calendar/CalendarScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailedcalendar/ScheduleMeetingDetailedInCalendarContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailedcalendar/ScheduleMeetingDetailedInCalendarPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailedcalendar/ScheduleMeetingDetailedInCalendarScreen.kt`
+- `README.md`
+
+## Latest Update (2026-03-31 Schedule Meeting Detailed + Pre-Meeting Chat)
+
+Implemented the latest `开发需求.md` current task for `Schedule Meeting Deatiled Page` and initial seed data:
+
+1. Added full `Schedule Meeting Deatiled Page` flow in MVP:
+   - New route and screen: `ScheduleMeetingDetailed`.
+   - `Schedule Meeting` save now returns new runtime `meetingId` and navigates to this detail page.
+   - Detail page actions:
+     - `Start` -> `Meeting Preview` -> existing in-meeting flow.
+     - `Chat` -> new full-screen pre-meeting chat page.
+     - `Add invitees` -> meeting-style popup (bottom overlay) with search/select and save.
+2. Added new pre-meeting chat page in MVP:
+   - New route and screen: `ScheduleMeetingChat`.
+   - Sending messages writes to runtime JSON via `DataRepository.addRuntimeChatMessage(...)`.
+3. Aligned meeting-context continuity:
+   - Added `DataRepository` current-meeting context setter/getter.
+   - `MeetingPreview` now accepts optional `meetingId` and sets active meeting context.
+   - After entering meeting, in-meeting chat reads the same meeting context, so messages sent in pre-meeting chat are visible in meeting message flow.
+4. Added repository capabilities for schedule-detail editing:
+   - Query runtime scheduled meeting by ID.
+   - Update runtime scheduled meeting invitees by ID and persist to runtime scheduled JSON.
+5. Added initial static seed data in assets:
+   - Contacts: `user051`, `user052`
+   - Meetings: `mtg021`, `mtg022`
+   - Messages: `msg081`~`msg084`
+6. Build verification:
+   - Ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/navigation/Routes.kt`
+- `app/src/main/java/com/example/zoom/navigation/NavGraph.kt`
+- `app/src/main/java/com/example/zoom/data/DataRepository.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeeting/ScheduleMeetingScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingpreview/MeetingPreviewContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingpreview/MeetingPreviewPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingpreview/MeetingPreviewScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingdetailed/MeetingDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingdetailed/ScheduleMeetingDetailedScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingchat/ScheduleMeetingChatContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingchat/ScheduleMeetingChatPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/schedulemeetingchat/ScheduleMeetingChatScreen.kt`
+- `app/src/main/assets/data/users.json`
+- `app/src/main/assets/data/meetings.json`
+- `app/src/main/assets/data/messages.json`
+- `README.md`
+
+## Latest Update (2026-03-31 Full MVP UI-Layer Decoupling)
+
+Continued the MVP normalization plan and completed UI-layer repository decoupling on main pages:
+
+1. Removed the last UI component direct repository access:
+   - `ZoomTopBar` no longer reads `DataRepository` directly.
+   - Avatar letter is now passed in from page state (`avatarInitial`) so `ui/components` remains pure render logic.
+2. Unified primary tab pages to presenter-driven UI state:
+   - Refactored `Team Chat`, `Calendar`, `Docs`, and `Mail` contracts/presenters/screens to use explicit `UiState` payloads that include `currentUserInitial`.
+   - Standardized screen initialization by remembering presenter instances and loading data through presenter only.
+   - Updated `SearchFilterCatalog` to accept presenter-injected user initials instead of reading repository directly.
+3. Kept existing behavior unchanged while normalizing structure:
+   - Existing lists/empty states/tab behavior remain the same.
+   - Changes are structural and maintainability-focused for future automation compatibility.
+4. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/ui/components/ZoomTopBar.kt`
+- `app/src/main/java/com/example/zoom/presentation/teamchat/TeamChatContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/teamchat/TeamChatPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/teamchat/TeamChatScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/calendar/CalendarContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/calendar/CalendarPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/calendar/CalendarScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/documents/DocumentsContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/documents/DocumentsPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/documents/DocumentsScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/mail/MailContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/mail/MailPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/mail/MailScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/search/SearchFilterCatalog.kt`
+- `app/src/main/java/com/example/zoom/presentation/search/SearchPresenter.kt`
+- `README.md`
+
+## Latest Update (2026-03-31 MVP Normalization Closure And i18n Baseline)
+
+Implemented the current normalization plan closure for automation-readiness and maintainability:
+
+1. Completed `Meeting Participants` action flow MVP alignment:
+   - Removed direct `DataRepository` writes from `MeetingParticipantsDetailedOverlay`.
+   - Added presenter-side action methods for `Mute all`, `Ask all to unmute`, and `Invite contacts` runtime logging.
+   - Unified action types with centralized constants (`MeetingActionTypes`) to avoid string drift.
+2. Standardized runtime signal infrastructure:
+   - Added centralized runtime signal constants in `RuntimeSignalConstants.kt` (file names, ID prefixes, action types).
+   - Kept `DataRepository` runtime JSON IO explicitly UTF-8 and pretty-printed (`GsonBuilder#setPrettyPrinting`).
+3. Added string resource baseline for key pages (`Home`, `Join meeting`, `Meeting chat`):
+   - Migrated major display text/content descriptions to `stringResource(...)`.
+   - Added `res/values-zh/strings.xml` for Chinese localization entries.
+4. Build verification:
+   - Ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+### Modified files
+- `app/src/main/java/com/example/zoom/common/constants/RuntimeSignalConstants.kt`
+- `app/src/main/java/com/example/zoom/data/DataRepository.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomePresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/home/HomeScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/joinmeeting/JoinMeetingContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/joinmeeting/JoinMeetingPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/joinmeeting/JoinMeetingScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingchatdetailed/MeetingChatDetailedContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingchatdetailed/MeetingChatDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingchatdetailed/MeetingChatDetailedScreen.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedContract.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedPresenter.kt`
+- `app/src/main/java/com/example/zoom/presentation/meetingparticipantsdetailed/MeetingParticipantsDetailedOverlay.kt`
+- `app/src/main/res/values/strings.xml`
+- `app/src/main/res/values-zh/strings.xml`
+- `README.md`
+
 ## Latest Update (2026-03-30 Runtime Business Signals JSON Integration)
 
 Aligned core mutable business behavior with the same runtime-JSON policy used by scheduled meetings:

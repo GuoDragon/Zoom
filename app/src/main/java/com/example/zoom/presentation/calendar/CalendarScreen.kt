@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -60,9 +61,11 @@ private enum class CalendarViewMode {
 @Composable
 fun CalendarScreen(
     onAvatarClick: () -> Unit,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onMeetingClick: (String) -> Unit
 ) {
     val meetingItems = remember { mutableStateListOf<Meeting>() }
+    var avatarInitial by remember { mutableStateOf("?") }
     var isEmpty by remember { mutableStateOf(false) }
     var selectedDay by remember { mutableIntStateOf(0) }
     var viewMode by remember { mutableStateOf(CalendarViewMode.Weekly) }
@@ -77,27 +80,26 @@ fun CalendarScreen(
 
     val view = remember {
         object : CalendarContract.View {
-            override fun showMeetings(meetings: List<Meeting>) {
-                isEmpty = false
+            override fun showUiState(state: CalendarUiState) {
+                avatarInitial = state.currentUserInitial
+                isEmpty = state.isEmpty
                 meetingItems.clear()
-                meetingItems.addAll(meetings)
-            }
-
-            override fun showEmpty() {
-                isEmpty = true
-                meetingItems.clear()
+                meetingItems.addAll(state.meetings)
             }
         }
     }
+    val presenter = remember(view) { CalendarPresenter(view) }
+    val meetingDataVersion by presenter.observeRuntimeVersion().collectAsState()
 
-    LaunchedEffect(selectedDay) {
-        CalendarPresenter(view).loadData(weekDays[selectedDay].timeInMillis)
+    LaunchedEffect(selectedDay, meetingDataVersion) {
+        presenter.loadData(weekDays[selectedDay].timeInMillis)
     }
 
     Scaffold(
         topBar = {
             ZoomTopBar(
                 title = "Calendar",
+                avatarInitial = avatarInitial,
                 onAvatarClick = onAvatarClick,
                 actions = {
                     TopBarIconAction(
@@ -144,9 +146,15 @@ fun CalendarScreen(
             if (isEmpty) {
                 EmptyCalendarState()
             } else if (viewMode == CalendarViewMode.Agenda) {
-                AgendaMeetingList(meetings = meetingItems)
+                AgendaMeetingList(
+                    meetings = meetingItems,
+                    onMeetingClick = onMeetingClick
+                )
             } else {
-                WeeklyMeetingList(meetings = meetingItems)
+                WeeklyMeetingList(
+                    meetings = meetingItems,
+                    onMeetingClick = onMeetingClick
+                )
             }
         }
     }
@@ -302,7 +310,10 @@ private fun EmptyCalendarState() {
 }
 
 @Composable
-private fun WeeklyMeetingList(meetings: List<Meeting>) {
+private fun WeeklyMeetingList(
+    meetings: List<Meeting>,
+    onMeetingClick: (String) -> Unit
+) {
     val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -310,7 +321,8 @@ private fun WeeklyMeetingList(meetings: List<Meeting>) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .clickable { onMeetingClick(meeting.meetingId) },
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -346,7 +358,10 @@ private fun WeeklyMeetingList(meetings: List<Meeting>) {
 }
 
 @Composable
-private fun AgendaMeetingList(meetings: List<Meeting>) {
+private fun AgendaMeetingList(
+    meetings: List<Meeting>,
+    onMeetingClick: (String) -> Unit
+) {
     val dateFormatter = remember { SimpleDateFormat("EEE, MMM d", Locale.ENGLISH) }
     val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
@@ -355,7 +370,8 @@ private fun AgendaMeetingList(meetings: List<Meeting>) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .clickable { onMeetingClick(meeting.meetingId) },
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFF)),
                 shape = RoundedCornerShape(12.dp)
             ) {

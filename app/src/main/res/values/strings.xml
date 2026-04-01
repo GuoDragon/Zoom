@@ -1,3 +1,45 @@
 <resources>
     <string name="app_name">Zoom</string>
+
+    <string name="home_expansion_personal_id">Meet with Personal ID</string>
+    <string name="home_expansion_scan_qr">Scan QR code</string>
+    <string name="home_expansion_transfer_meeting">Transfer a meeting</string>
+    <string name="home_expansion_footer_add_calendar">Add a calendar</string>
+    <string name="home_action_meet">Meet</string>
+    <string name="home_action_join">Join</string>
+    <string name="home_action_schedule">Schedule</string>
+    <string name="home_action_share">Share</string>
+    <string name="home_no_upcoming_meetings">No upcoming meetings</string>
+    <string name="home_upcoming_meetings_hint">Your upcoming meetings will appear here</string>
+    <string name="home_upcoming_meetings_title">Upcoming Meetings</string>
+    <string name="home_start">Start</string>
+
+    <string name="join_meeting_title">Join meeting</string>
+    <string name="join_meeting_personal_link">Join with a personal link name</string>
+    <string name="join_meeting_screen_name_placeholder">Screen name</string>
+    <string name="join_meeting_action_join">Join</string>
+    <string name="join_meeting_invitation_hint">If you received an invitation link, tap on the link again to join the meeting</string>
+    <string name="join_meeting_options_title">Join options</string>
+    <string name="join_meeting_option_no_audio">Don\'t connect to audio</string>
+    <string name="join_meeting_option_video_off">Turn off my video</string>
+    <string name="join_meeting_id_placeholder">Meeting ID</string>
+    <string name="join_meeting_open_history">Open meeting history</string>
+    <string name="join_meeting_clear_history">Clear history</string>
+    <string name="join_meeting_no_history">No meeting history</string>
+
+    <string name="meeting_chat_collapse">Collapse</string>
+    <string name="meeting_chat_everyone">Everyone</string>
+    <string name="meeting_chat_new_chat">New chat</string>
+    <string name="meeting_chat_you">You</string>
+    <string name="meeting_chat_reply">Reply</string>
+    <string name="meeting_chat_react">React</string>
+    <string name="meeting_chat_message_everyone">Message everyone</string>
+    <string name="meeting_chat_visibility_tip">Who can see your messages?</string>
+
+    <string name="common_add">Add</string>
+    <string name="common_close">Close</string>
+    <string name="common_done">Done</string>
+    <string name="common_emoji">Emoji</string>
+    <string name="common_more">More</string>
+    <string name="common_send">Send</string>
 </resources>

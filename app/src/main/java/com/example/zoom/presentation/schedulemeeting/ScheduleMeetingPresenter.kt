@@ -9,31 +9,55 @@ class ScheduleMeetingPresenter(
     private val view: ScheduleMeetingContract.View
 ) : ScheduleMeetingContract.Presenter {
 
-    override fun loadData() {
+    override fun loadData(editingMeetingId: String?) {
         val user = DataRepository.getCurrentUser()
         val defaultZoneId = if (ZoneId.getAvailableZoneIds().contains(DEFAULT_TIME_ZONE_ID)) {
             DEFAULT_TIME_ZONE_ID
         } else {
             ZoneId.systemDefault().id
         }
-        val initialState = ScheduleMeetingInitialState(
-            draft = ScheduleMeetingDraft(
-                meetingTitle = "${user.username}'s Zoom Meeting",
-                startTimeMillis = buildDefaultStartTime(defaultZoneId),
-                durationMinutes = 30,
-                timeZoneId = defaultZoneId,
-                repeat = "None",
-                calendar = "iCalendar",
+        val editingSignal = editingMeetingId?.let { DataRepository.getScheduledMeetingSignalById(it) }
+        val initialDraft = editingSignal?.let { signal ->
+            ScheduleMeetingDraft(
+                meetingTitle = signal.topic,
+                startTimeMillis = signal.startTime,
+                durationMinutes = signal.durationMinutes,
+                timeZoneId = if (ZoneId.getAvailableZoneIds().contains(signal.timeZoneId)) {
+                    signal.timeZoneId
+                } else {
+                    defaultZoneId
+                },
+                repeat = signal.repeat,
+                calendar = signal.calendar,
                 usePersonalMeetingId = false,
                 requirePasscode = true,
                 passcode = "d3L4Sh",
                 waitingRoom = false,
-                encryption = "Enhanced",
-                inviteeUserIds = emptySet(),
+                encryption = signal.encryption,
+                inviteeUserIds = signal.inviteeUserIds.toSet(),
                 continuousMeetingChat = true,
                 hostVideoOn = true,
                 participantVideoOn = true
-            ),
+            )
+        } ?: ScheduleMeetingDraft(
+            meetingTitle = "${user.username}'s Zoom Meeting",
+            startTimeMillis = buildDefaultStartTime(defaultZoneId),
+            durationMinutes = 30,
+            timeZoneId = defaultZoneId,
+            repeat = "None",
+            calendar = "iCalendar",
+            usePersonalMeetingId = false,
+            requirePasscode = true,
+            passcode = "d3L4Sh",
+            waitingRoom = false,
+            encryption = "Enhanced",
+            inviteeUserIds = emptySet(),
+            continuousMeetingChat = true,
+            hostVideoOn = true,
+            participantVideoOn = true
+        )
+        val initialState = ScheduleMeetingInitialState(
+            draft = initialDraft,
             personalMeetingId = "994 888 1080",
             repeatOptions = listOf(
                 "None",
@@ -70,18 +94,41 @@ class ScheduleMeetingPresenter(
         view.showInitialState(initialState)
     }
 
-    override fun saveMeeting(draft: ScheduleMeetingDraft) {
-        DataRepository.addScheduledMeetingSignal(
-            topic = draft.meetingTitle,
-            startTime = draft.startTimeMillis,
-            durationMinutes = draft.durationMinutes,
-            timeZoneId = draft.timeZoneId,
-            repeat = draft.repeat,
-            calendar = draft.calendar,
-            encryption = draft.encryption,
-            inviteeUserIds = draft.inviteeUserIds.toList()
-        )
-        view.onMeetingSaved()
+    override fun saveMeeting(draft: ScheduleMeetingDraft, editingMeetingId: String?) {
+        val signal = if (!editingMeetingId.isNullOrBlank()) {
+            DataRepository.updateScheduledMeetingSignal(
+                signalId = editingMeetingId,
+                topic = draft.meetingTitle,
+                startTime = draft.startTimeMillis,
+                durationMinutes = draft.durationMinutes,
+                timeZoneId = draft.timeZoneId,
+                repeat = draft.repeat,
+                calendar = draft.calendar,
+                encryption = draft.encryption,
+                inviteeUserIds = draft.inviteeUserIds.toList()
+            ) ?: DataRepository.addScheduledMeetingSignal(
+                topic = draft.meetingTitle,
+                startTime = draft.startTimeMillis,
+                durationMinutes = draft.durationMinutes,
+                timeZoneId = draft.timeZoneId,
+                repeat = draft.repeat,
+                calendar = draft.calendar,
+                encryption = draft.encryption,
+                inviteeUserIds = draft.inviteeUserIds.toList()
+            )
+        } else {
+            DataRepository.addScheduledMeetingSignal(
+                topic = draft.meetingTitle,
+                startTime = draft.startTimeMillis,
+                durationMinutes = draft.durationMinutes,
+                timeZoneId = draft.timeZoneId,
+                repeat = draft.repeat,
+                calendar = draft.calendar,
+                encryption = draft.encryption,
+                inviteeUserIds = draft.inviteeUserIds.toList()
+            )
+        }
+        view.onMeetingSaved(signal.signalId)
     }
 
     private fun buildTimeZoneOptions(): List<ScheduleMeetingTimeZoneOption> {

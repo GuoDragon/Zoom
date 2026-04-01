@@ -38,24 +38,28 @@ fun MailScreen(
     onAvatarClick: () -> Unit,
     onSearchClick: () -> Unit
 ) {
+    var avatarInitial by remember { mutableStateOf("?") }
     var showWelcome by remember { mutableStateOf(false) }
 
     val view = remember {
         object : MailContract.View {
-            override fun showWelcome() {
-                showWelcome = true
+            override fun showUiState(state: MailUiState) {
+                avatarInitial = state.currentUserInitial
+                showWelcome = state.showWelcome
             }
         }
     }
+    val presenter = remember(view) { MailPresenter(view) }
 
     LaunchedEffect(Unit) {
-        MailPresenter(view).loadData()
+        presenter.loadData()
     }
 
     Scaffold(
         topBar = {
             ZoomTopBar(
                 title = "Mail",
+                avatarInitial = avatarInitial,
                 onAvatarClick = onAvatarClick,
                 onSearchClick = onSearchClick
             )

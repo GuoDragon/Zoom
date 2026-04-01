@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.theme.ZoomGreen
 
 val ZoomTopBarInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
@@ -37,6 +36,7 @@ val ZoomTopBarInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
 @Composable
 fun ZoomTopBar(
     title: String,
+    avatarInitial: String,
     onAvatarClick: () -> Unit,
     onSearchClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
@@ -53,8 +53,7 @@ fun ZoomTopBar(
         )
     }
 ) {
-    val currentUser = DataRepository.getCurrentUser()
-    val initial = currentUser.username.first().uppercase()
+    val initial = avatarInitial.trim().firstOrNull()?.uppercase() ?: "?"
 
     TopAppBar(
         title = {

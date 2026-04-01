@@ -5,8 +5,15 @@ import com.example.zoom.data.DataRepository
 class MeetingPreviewPresenter(
     private val view: MeetingPreviewContract.View
 ) : MeetingPreviewContract.Presenter {
-    override fun loadData() {
+    override fun loadData(meetingId: String?) {
+        DataRepository.setCurrentMeeting(meetingId)
         val currentUser = DataRepository.getCurrentUser()
+        val currentMeeting = DataRepository.getCurrentMeeting()
+        val meetingTitle = if (meetingId.isNullOrBlank()) {
+            "${currentUser.username}'s Zoom Meeting"
+        } else {
+            currentMeeting.topic
+        }
         val initials = currentUser.username
             .split(" ")
             .mapNotNull { it.firstOrNull()?.uppercaseChar() }
@@ -16,7 +23,7 @@ class MeetingPreviewPresenter(
 
         view.showContent(
             MeetingPreviewUiState(
-                meetingTitle = "${currentUser.username}'s Zoom Meeting",
+                meetingTitle = meetingTitle,
                 participantInitials = initials,
                 microphoneOn = false,
                 cameraOn = false,

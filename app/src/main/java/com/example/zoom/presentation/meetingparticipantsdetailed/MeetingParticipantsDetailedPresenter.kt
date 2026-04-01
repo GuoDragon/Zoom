@@ -1,7 +1,8 @@
 package com.example.zoom.presentation.meetingparticipantsdetailed
 
+import com.example.zoom.common.constants.MeetingActionTypes
+import com.example.zoom.common.format.buildMeetingInviteMessageText
 import com.example.zoom.data.DataRepository
-import com.example.zoom.model.User
 
 class MeetingParticipantsDetailedPresenter(
     private val view: MeetingParticipantsDetailedContract.View
@@ -59,15 +60,11 @@ class MeetingParticipantsDetailedPresenter(
             InviteOptionUi("Copy invite link", "Link")
         )
 
-        val inviteMessageText = buildString {
-            appendLine("${currentUser.username} is inviting you to a scheduled Zoom meeting.")
-            appendLine()
-            appendLine("Topic: ${meeting.topic}")
-            appendLine("Meeting ID: ${meeting.meetingId}")
-            appendLine()
-            appendLine("Join Zoom Meeting")
-            appendLine("https://zoom.us/j/${meeting.meetingId}")
-        }
+        val inviteMessageText = buildMeetingInviteMessageText(
+            hostName = currentUser.username,
+            meetingTopic = meeting.topic,
+            meetingId = meeting.meetingId
+        )
 
         val contacts = allUsers
             .sortedBy { it.username }
@@ -90,6 +87,52 @@ class MeetingParticipantsDetailedPresenter(
                 allContacts = contacts,
                 meetingId = meeting.meetingId
             )
+        )
+    }
+
+    override fun muteAllParticipants(
+        participants: List<MeetingParticipantUi>,
+        meetingId: String
+    ): List<MeetingParticipantUi> {
+        val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
+        DataRepository.recordMeetingAction(
+            actionType = MeetingActionTypes.MUTE_ALL,
+            meetingId = meetingId,
+            targetUserIds = targetIds
+        )
+        return participants.map { participant ->
+            if (participant.isSelf) participant else participant.copy(isMuted = true)
+        }
+    }
+
+    override fun askAllToUnmute(
+        participants: List<MeetingParticipantUi>,
+        meetingId: String
+    ): List<MeetingParticipantUi> {
+        val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
+        DataRepository.recordMeetingAction(
+            actionType = MeetingActionTypes.ASK_ALL_TO_UNMUTE,
+            meetingId = meetingId,
+            targetUserIds = targetIds
+        )
+        return participants.map { participant ->
+            if (participant.isSelf) participant else participant.copy(isMuted = false)
+        }
+    }
+
+    override fun inviteContacts(
+        meetingId: String,
+        selectedContactIds: Set<String>
+    ) {
+        DataRepository.recordMeetingAction(
+            actionType = MeetingActionTypes.INVITE_CONTACTS,
+            meetingId = meetingId,
+            targetUserIds = selectedContactIds.toList(),
+            note = if (selectedContactIds.isEmpty()) {
+                "No contacts selected"
+            } else {
+                "Selected contacts: ${selectedContactIds.joinToString(",")}"
+            }
         )
     }
 

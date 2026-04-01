@@ -48,5 +48,7 @@
   {"userId": "user047", "username": "Dylan Rivera", "avatar": "https://avatar.example.com/user047.png", "phone": "+1-202-555-0147", "email": "dylan.rivera@gmail.com"},
   {"userId": "user048", "username": "Lindsey Cooper", "avatar": "https://avatar.example.com/user048.png", "phone": "+1-213-555-0148", "email": "lindsey.cooper@outlook.com"},
   {"userId": "user049", "username": "Ethan Richardson", "avatar": "https://avatar.example.com/user049.png", "phone": "+1-312-555-0149", "email": "ethan.richardson@gmail.com"},
-  {"userId": "user050", "username": "Natalie Cox", "avatar": "https://avatar.example.com/user050.png", "phone": "+1-415-555-0150", "email": "natalie.cox@gmail.com"}
+  {"userId": "user050", "username": "Natalie Cox", "avatar": "https://avatar.example.com/user050.png", "phone": "+1-415-555-0150", "email": "natalie.cox@gmail.com"},
+  {"userId": "user051", "username": "Grace Howard", "avatar": "https://avatar.example.com/user051.png", "phone": "+1-512-555-0151", "email": "grace.howard@outlook.com"},
+  {"userId": "user052", "username": "Ian Foster", "avatar": "https://avatar.example.com/user052.png", "phone": "+1-617-555-0152", "email": "ian.foster@gmail.com"}
 ]

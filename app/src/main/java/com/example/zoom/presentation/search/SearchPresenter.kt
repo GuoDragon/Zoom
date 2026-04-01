@@ -13,7 +13,13 @@ class SearchPresenter(private val view: SearchContract.View) : SearchContract.Pr
     private val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     private val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
     private val currentUser = DataRepository.getCurrentUser()
-    private val categoryFilters = SearchFilterCatalog.build()
+    private val currentUserInitial = currentUser.username
+        .split(" ")
+        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+        .take(2)
+        .joinToString("")
+        .ifBlank { "ME" }
+    private val categoryFilters = SearchFilterCatalog.build(currentUserInitial)
     private val filterSelections = categoryFilters.mapValues { (_, filters) ->
         filters.associate { filter ->
             filter.id to FilterSelectionState(

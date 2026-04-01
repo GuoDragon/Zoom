@@ -48,6 +48,7 @@ import com.example.zoom.ui.components.ZoomPrimaryActionButton
 
 @Composable
 fun MeetingPreviewScreen(
+    meetingId: String?,
     onLeaveClick: () -> Unit,
     onStartClick: (MeetingSessionConfig) -> Unit
 ) {
@@ -61,8 +62,10 @@ fun MeetingPreviewScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        MeetingPreviewPresenter(view).loadData()
+    val presenter = remember(view) { MeetingPreviewPresenter(view) }
+
+    LaunchedEffect(presenter, meetingId) {
+        presenter.loadData(meetingId)
     }
 
     uiState?.let { screenState ->
@@ -188,7 +191,8 @@ fun MeetingPreviewScreen(
                             MeetingSessionConfig(
                                 microphoneOn = microphoneOn,
                                 cameraOn = cameraOn,
-                                audioOption = selectedAudioOption
+                                audioOption = selectedAudioOption,
+                                screenSharingEnabled = false
                             )
                         )
                     },

@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">Zoom</string>
+
+    <string name="home_expansion_personal_id">使用个人会议号开会</string>
+    <string name="home_expansion_scan_qr">扫描二维码</string>
+    <string name="home_expansion_transfer_meeting">转移会议</string>
+    <string name="home_expansion_footer_add_calendar">添加日历</string>
+    <string name="home_action_meet">开会</string>
+    <string name="home_action_join">加入</string>
+    <string name="home_action_schedule">安排</string>
+    <string name="home_action_share">共享</string>
+    <string name="home_no_upcoming_meetings">暂无即将开始的会议</string>
+    <string name="home_upcoming_meetings_hint">即将开始的会议会显示在这里</string>
+    <string name="home_upcoming_meetings_title">即将开始的会议</string>
+    <string name="home_start">开始</string>
+
+    <string name="join_meeting_title">加入会议</string>
+    <string name="join_meeting_personal_link">使用个人链接名称加入</string>
+    <string name="join_meeting_screen_name_placeholder">屏幕名称</string>
+    <string name="join_meeting_action_join">加入</string>
+    <string name="join_meeting_invitation_hint">如果你收到邀请链接，请再次点击链接加入会议</string>
+    <string name="join_meeting_options_title">加入选项</string>
+    <string name="join_meeting_option_no_audio">不连接音频</string>
+    <string name="join_meeting_option_video_off">关闭我的视频</string>
+    <string name="join_meeting_id_placeholder">会议号</string>
+    <string name="join_meeting_open_history">打开会议历史</string>
+    <string name="join_meeting_clear_history">清空历史</string>
+    <string name="join_meeting_no_history">暂无会议历史</string>
+
+    <string name="meeting_chat_collapse">收起</string>
+    <string name="meeting_chat_everyone">所有人</string>
+    <string name="meeting_chat_new_chat">新聊天</string>
+    <string name="meeting_chat_you">你</string>
+    <string name="meeting_chat_reply">回复</string>
+    <string name="meeting_chat_react">表情</string>
+    <string name="meeting_chat_message_everyone">向所有人发送消息</string>
+    <string name="meeting_chat_visibility_tip">谁可以看到你的消息？</string>
+
+    <string name="common_add">添加</string>
+    <string name="common_close">关闭</string>
+    <string name="common_done">完成</string>
+    <string name="common_emoji">表情</string>
+    <string name="common_more">更多</string>
+    <string name="common_send">发送</string>
+</resources>

@@ -6,7 +6,7 @@ interface MeetingPreviewContract {
     }
 
     interface Presenter {
-        fun loadData()
+        fun loadData(meetingId: String?)
     }
 }
 

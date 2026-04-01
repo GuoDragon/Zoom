@@ -56,6 +56,7 @@ fun TeamChatScreen(
     onSearchClick: () -> Unit
 ) {
     val chatItems = remember { mutableStateListOf<Message>() }
+    var avatarInitial by remember { mutableStateOf("?") }
     var selectedTab by remember { mutableIntStateOf(0) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     val tabs = listOf("All", "Mentions", "Chats", "Channels", "Meeting Chats", "Shared Spaces", "More")
@@ -69,21 +70,24 @@ fun TeamChatScreen(
 
     val view = remember {
         object : TeamChatContract.View {
-            override fun showChatList(chats: List<Message>) {
+            override fun showUiState(state: TeamChatUiState) {
+                avatarInitial = state.currentUserInitial
                 chatItems.clear()
-                chatItems.addAll(chats)
+                chatItems.addAll(state.chats)
             }
         }
     }
+    val presenter = remember(view) { TeamChatPresenter(view) }
 
     LaunchedEffect(Unit) {
-        TeamChatPresenter(view).loadData()
+        presenter.loadData()
     }
 
     Scaffold(
         topBar = {
             ZoomTopBar(
                 title = "Team Chat",
+                avatarInitial = avatarInitial,
                 onAvatarClick = onAvatarClick,
                 actions = {
                     TopBarIconAction(

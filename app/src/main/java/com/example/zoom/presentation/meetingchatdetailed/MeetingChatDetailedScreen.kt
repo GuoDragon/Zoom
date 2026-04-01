@@ -48,12 +48,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.data.DataRepository
+import com.example.zoom.R
 import com.example.zoom.ui.theme.ZoomBlue
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -78,9 +79,10 @@ fun MeetingChatDetailedOverlay(
             }
         }
     }
+    val presenter = remember(view) { MeetingChatDetailedPresenter(view) }
 
     LaunchedEffect(Unit) {
-        MeetingChatDetailedPresenter(view).loadData()
+        presenter.loadData()
     }
 
     LaunchedEffect(localMessages.size) {
@@ -144,27 +146,9 @@ fun MeetingChatDetailedOverlay(
                 onSendClick = {
                     if (inputText.isBlank()) return@MeetingChatComposer
 
-                    val meetingId = DataRepository.getCurrentMeeting().meetingId
-                    val savedMessage = DataRepository.addRuntimeChatMessage(
-                        meetingId = meetingId,
-                        content = inputText.trim()
-                    )
-                    val senderInitials = savedMessage.senderName
-                        .split(" ")
-                        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
-                        .take(2)
-                        .joinToString("")
-                        .ifBlank { "?" }
-                    val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
-
-                    localMessages = localMessages + ChatMessageUi(
-                        messageId = savedMessage.messageId,
-                        senderName = savedMessage.senderName,
-                        senderInitials = senderInitials,
-                        content = savedMessage.content,
-                        timestamp = timeFormat.format(Date(savedMessage.timestamp)),
-                        isSelf = true
-                    )
+                    presenter.sendMessage(inputText)?.let { newMessage ->
+                        localMessages = localMessages + newMessage
+                    }
 
                     inputText = ""
                 }
@@ -205,7 +189,7 @@ private fun MeetingChatHeader(
         IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.common_close),
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
@@ -223,14 +207,14 @@ private fun MeetingChatHeader(
         IconButton(onClick = {}, modifier = Modifier.size(32.dp)) {
             Icon(
                 imageVector = Icons.Default.KeyboardArrowUp,
-                contentDescription = "Collapse",
+                contentDescription = stringResource(R.string.meeting_chat_collapse),
                 tint = Color.White
             )
         }
         IconButton(onClick = {}, modifier = Modifier.size(32.dp)) {
             Icon(
                 imageVector = Icons.Default.MoreHoriz,
-                contentDescription = "More",
+                contentDescription = stringResource(R.string.common_more),
                 tint = Color.White
             )
         }
@@ -249,12 +233,12 @@ private fun MeetingChatAudienceRow() {
         MeetingAudienceChip(
             selected = true,
             icon = Icons.Default.Groups,
-            label = "Everyone"
+            label = stringResource(R.string.meeting_chat_everyone)
         )
         MeetingAudienceChip(
             selected = false,
             icon = Icons.Default.Add,
-            label = "New chat"
+            label = stringResource(R.string.meeting_chat_new_chat)
         )
     }
 }
@@ -342,7 +326,11 @@ private fun MeetingChatMessageRow(message: ChatMessageUi) {
             modifier = Modifier.widthIn(max = 220.dp)
         ) {
             Text(
-                text = if (message.isSelf) "You" else message.senderName,
+                text = if (message.isSelf) {
+                    stringResource(R.string.meeting_chat_you)
+                } else {
+                    message.senderName
+                },
                 color = Color(0xFF8E8E93),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
@@ -369,15 +357,15 @@ private fun MeetingChatMessageRow(message: ChatMessageUi) {
                 ) {
                     MeetingChatActionIcon(
                         icon = Icons.AutoMirrored.Filled.Reply,
-                        contentDescription = "Reply"
+                        contentDescription = stringResource(R.string.meeting_chat_reply)
                     )
                     MeetingChatActionIcon(
                         icon = Icons.Default.AddReaction,
-                        contentDescription = "React"
+                        contentDescription = stringResource(R.string.meeting_chat_react)
                     )
                     MeetingChatActionIcon(
                         icon = Icons.Default.MoreHoriz,
-                        contentDescription = "More"
+                        contentDescription = stringResource(R.string.common_more)
                     )
                 }
             }
@@ -416,7 +404,7 @@ private fun MeetingChatComposer(
             IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
+                    contentDescription = stringResource(R.string.common_add),
                     tint = Color(0xFFBDBDC2)
                 )
             }
@@ -429,7 +417,7 @@ private fun MeetingChatComposer(
                     .height(42.dp),
                 placeholder = {
                     Text(
-                        text = "Message everyone",
+                        text = stringResource(R.string.meeting_chat_message_everyone),
                         color = Color(0xFF8E8E93),
                         fontSize = 15.sp
                     )
@@ -450,14 +438,14 @@ private fun MeetingChatComposer(
             IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
                 Icon(
                     imageVector = Icons.Default.SentimentSatisfied,
-                    contentDescription = "Emoji",
+                    contentDescription = stringResource(R.string.common_emoji),
                     tint = Color(0xFFBDBDC2)
                 )
             }
             IconButton(onClick = onSendClick, modifier = Modifier.size(34.dp)) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
+                    contentDescription = stringResource(R.string.common_send),
                     tint = if (inputText.isNotBlank()) ZoomBlue else Color(0xFF5E5E63)
                 )
             }
@@ -475,7 +463,7 @@ private fun MeetingChatComposer(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Who can see your messages?",
+                text = stringResource(R.string.meeting_chat_visibility_tip),
                 color = Color(0xFF9C9CA2),
                 fontSize = 13.sp
             )

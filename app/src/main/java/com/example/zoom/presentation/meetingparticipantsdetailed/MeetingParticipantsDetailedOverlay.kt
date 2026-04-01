@@ -61,7 +61,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.data.DataRepository
 
 @Composable
 fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
@@ -81,9 +80,10 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
             }
         }
     }
+    val presenter = remember(view) { MeetingParticipantsDetailedPresenter(view) }
 
     LaunchedEffect(Unit) {
-        MeetingParticipantsDetailedPresenter(view).loadData()
+        presenter.loadData()
     }
 
     Box(
@@ -117,26 +117,16 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                     },
                     onMoreClick = { showParticipantsMoreMenu = !showParticipantsMoreMenu },
                     onMuteAllClick = {
-                        val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
-                        participants = participants.map { participant ->
-                            if (participant.isSelf) participant else participant.copy(isMuted = true)
-                        }
-                        DataRepository.recordMeetingAction(
-                            actionType = "MUTE_ALL",
-                            meetingId = displayState.meetingId,
-                            targetUserIds = targetIds
+                        participants = presenter.muteAllParticipants(
+                            participants = participants,
+                            meetingId = displayState.meetingId
                         )
                         showParticipantsMoreMenu = false
                     },
                     onAskAllToUnmuteClick = {
-                        val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
-                        participants = participants.map { participant ->
-                            if (participant.isSelf) participant else participant.copy(isMuted = false)
-                        }
-                        DataRepository.recordMeetingAction(
-                            actionType = "ASK_ALL_TO_UNMUTE",
-                            meetingId = displayState.meetingId,
-                            targetUserIds = targetIds
+                        participants = presenter.askAllToUnmute(
+                            participants = participants,
+                            meetingId = displayState.meetingId
                         )
                         showParticipantsMoreMenu = false
                     }
@@ -173,15 +163,9 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                     },
                     onBack = { currentPage = ParticipantsSubPage.ADD_INVITE },
                     onInvite = {
-                        DataRepository.recordMeetingAction(
-                            actionType = "INVITE_CONTACTS",
+                        presenter.inviteContacts(
                             meetingId = displayState.meetingId,
-                            targetUserIds = selectedContactIds.toList(),
-                            note = if (selectedContactIds.isEmpty()) {
-                                "No contacts selected"
-                            } else {
-                                "Selected contacts: ${selectedContactIds.joinToString(",")}"
-                            }
+                            selectedContactIds = selectedContactIds
                         )
                         currentPage = ParticipantsSubPage.ADD_INVITE
                     }

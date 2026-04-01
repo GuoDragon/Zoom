@@ -38,24 +38,28 @@ fun DocumentsScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Recent", "Started", "My docs", "Shared folders", "Shared with me", "Trash")
+    var avatarInitial by remember { mutableStateOf("?") }
     var isEmpty by remember { mutableStateOf(false) }
 
     val view = remember {
         object : DocumentsContract.View {
-            override fun showEmpty() {
-                isEmpty = true
+            override fun showUiState(state: DocumentsUiState) {
+                avatarInitial = state.currentUserInitial
+                isEmpty = state.isEmpty
             }
         }
     }
+    val presenter = remember(view) { DocumentsPresenter(view) }
 
     LaunchedEffect(Unit) {
-        DocumentsPresenter(view).loadData()
+        presenter.loadData()
     }
 
     Scaffold(
         topBar = {
             ZoomTopBar(
                 title = "Docs",
+                avatarInitial = avatarInitial,
                 onAvatarClick = onAvatarClick,
                 actions = {
                     TopBarIconAction(

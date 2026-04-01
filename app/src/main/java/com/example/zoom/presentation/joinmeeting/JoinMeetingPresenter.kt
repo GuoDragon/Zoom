@@ -10,13 +10,35 @@ class JoinMeetingPresenter(
             JoinMeetingUiState(
                 audioOff = false,
                 videoOff = true,
-                historyItems = DataRepository.getJoinHistoryEntries().map { item ->
-                    JoinMeetingHistoryItem(
-                        title = item.title,
-                        meetingNumber = item.meetingNumber
-                    )
-                }
+                historyItems = refreshHistory()
             )
         )
+    }
+
+    override fun refreshHistory(): List<JoinMeetingHistoryItem> {
+        return DataRepository.getJoinHistoryEntries().map { item ->
+            JoinMeetingHistoryItem(
+                title = item.title,
+                meetingNumber = item.meetingNumber
+            )
+        }
+    }
+
+    override fun recordJoinByMeetingNumber(meetingNumber: String) {
+        DataRepository.recordJoinHistoryUsed(
+            meetingNumber = meetingNumber,
+            title = "${DataRepository.getCurrentUser().username}'s Zoom Meeting"
+        )
+    }
+
+    override fun recordJoinByHistoryItem(item: JoinMeetingHistoryItem) {
+        DataRepository.recordJoinHistoryUsed(
+            meetingNumber = item.meetingNumber,
+            title = item.title
+        )
+    }
+
+    override fun clearHistory() {
+        DataRepository.clearJoinHistoryEntries()
     }
 }

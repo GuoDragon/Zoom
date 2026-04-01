@@ -1,6 +1,10 @@
 package com.example.zoom.data
 
 import android.content.Context
+import com.example.zoom.common.constants.JoinHistoryActionTypes
+import com.example.zoom.common.constants.MeetingActionTypes
+import com.example.zoom.common.constants.RuntimeSignalFileNames
+import com.example.zoom.common.constants.RuntimeSignalPrefixes
 import com.example.zoom.model.JoinMeetingHistoryAction
 import com.example.zoom.model.JoinMeetingHistoryEntry
 import com.example.zoom.model.JoinMeetingHistorySignal
@@ -9,14 +13,25 @@ import com.example.zoom.model.MeetingActionSignal
 import com.example.zoom.model.Message
 import com.example.zoom.model.ScheduledMeetingSignal
 import com.example.zoom.model.User
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 object DataRepository {
-    private val gson = Gson()
+    private const val DEFAULT_CURRENT_MEETING_ID = "mtg016"
+
+    private data class ActiveScreenShareSession(
+        val meetingId: String,
+        val shareCode: String
+    )
+
+    private val gson = GsonBuilder()
+        .setPrettyPrinting()
+        .disableHtmlEscaping()
+        .create()
     private var users: List<User> = emptyList()
     private var meetings: List<Meeting> = emptyList()
     private var messages: List<Message> = emptyList()
@@ -26,16 +41,12 @@ object DataRepository {
     private var runtimeJoinHistoryEntries: MutableList<JoinMeetingHistoryEntry> = mutableListOf()
     private var runtimeJoinHistoryActions: MutableList<JoinMeetingHistoryAction> = mutableListOf()
     private var runtimeMeetingActions: MutableList<MeetingActionSignal> = mutableListOf()
+    private var activeScreenShareSession: ActiveScreenShareSession? = null
 
     private lateinit var appContext: Context
     private var initialized = false
+    private var currentMeetingId: String = DEFAULT_CURRENT_MEETING_ID
     private val runtimeDataVersion = MutableStateFlow(0)
-
-    private const val runtimeScheduledMeetingFileName = "runtime_scheduled_meetings.json"
-    private const val runtimeChatMessageFileName = "runtime_chat_messages.json"
-    private const val runtimeJoinHistoryFileName = "runtime_join_history.json"
-    private const val runtimeMeetingActionFileName = "runtime_meeting_actions.json"
-    private const val runtimeMeetingIdPrefix = "scheduled_"
 
     fun init(context: Context) {
         if (initialized) return
@@ -44,15 +55,15 @@ object DataRepository {
         val assets = appContext.assets
 
         users = gson.fromJson(
-            assets.open("data/users.json").bufferedReader().use { it.readText() },
+            assets.open("data/users.json").bufferedReader(StandardCharsets.UTF_8).use { it.readText() },
             object : TypeToken<List<User>>() {}.type
         )
         meetings = gson.fromJson(
-            assets.open("data/meetings.json").bufferedReader().use { it.readText() },
+            assets.open("data/meetings.json").bufferedReader(StandardCharsets.UTF_8).use { it.readText() },
             object : TypeToken<List<Meeting>>() {}.type
         )
         messages = gson.fromJson(
-            assets.open("data/messages.json").bufferedReader().use { it.readText() },
+            assets.open("data/messages.json").bufferedReader(StandardCharsets.UTF_8).use { it.readText() },
             object : TypeToken<List<Message>>() {}.type
         )
 
@@ -70,15 +81,19 @@ object DataRepository {
 
     fun getScheduledMeetingSignals(): List<ScheduledMeetingSignal> = scheduledMeetingSignals.toList()
 
+    fun getScheduledMeetingSignalById(signalId: String): ScheduledMeetingSignal? {
+        return scheduledMeetingSignals.firstOrNull { it.signalId == signalId }
+    }
+
     fun getMeetingActionSignals(): List<MeetingActionSignal> = runtimeMeetingActions.toList()
 
     fun getJoinHistoryEntries(): List<JoinMeetingHistoryEntry> = runtimeJoinHistoryEntries.toList()
 
     fun getRuntimeSignalFilePaths(): Map<String, String> = mapOf(
-        runtimeScheduledMeetingFileName to runtimeScheduledMeetingFile().absolutePath,
-        runtimeChatMessageFileName to runtimeChatMessageFile().absolutePath,
-        runtimeJoinHistoryFileName to runtimeJoinHistoryFile().absolutePath,
-        runtimeMeetingActionFileName to runtimeMeetingActionFile().absolutePath
+        RuntimeSignalFileNames.RUNTIME_SCHEDULED_MEETINGS to runtimeScheduledMeetingFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_CHAT_MESSAGES to runtimeChatMessageFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY to runtimeJoinHistoryFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS to runtimeMeetingActionFile().absolutePath
     )
 
     fun getScheduledMeetingSignalFilePath(): String = runtimeScheduledMeetingFile().absolutePath
@@ -151,7 +166,17 @@ object DataRepository {
         return getMessages().filter { it.meetingId == meetingId }.sortedBy { it.timestamp }
     }
 
-    fun getCurrentMeeting(): Meeting = meetings.first { it.meetingId == "mtg016" }
+    fun setCurrentMeeting(meetingId: String?) {
+        val normalized = meetingId?.takeIf { it.isNotBlank() } ?: DEFAULT_CURRENT_MEETING_ID
+        val resolved = getMeetingById(normalized)?.meetingId
+        currentMeetingId = resolved ?: DEFAULT_CURRENT_MEETING_ID
+    }
+
+    fun getCurrentMeeting(): Meeting {
+        return getMeetingById(currentMeetingId)
+            ?: meetings.firstOrNull { it.meetingId == DEFAULT_CURRENT_MEETING_ID }
+            ?: getMeetings().first()
+    }
 
     fun getParticipantsForMeeting(meetingId: String): List<User> {
         val meeting = getMeetingById(meetingId) ?: return emptyList()
@@ -169,7 +194,7 @@ object DataRepository {
         inviteeUserIds: List<String>
     ): ScheduledMeetingSignal {
         val signal = ScheduledMeetingSignal(
-            signalId = "$runtimeMeetingIdPrefix${System.currentTimeMillis()}_${scheduledMeetingSignals.size + 1}",
+            signalId = "${RuntimeSignalPrefixes.RUNTIME_MEETING_ID_PREFIX}${System.currentTimeMillis()}_${scheduledMeetingSignals.size + 1}",
             topic = topic,
             startTime = startTime,
             durationMinutes = durationMinutes,
@@ -186,11 +211,55 @@ object DataRepository {
         return signal
     }
 
+    fun updateScheduledMeetingSignal(
+        signalId: String,
+        topic: String,
+        startTime: Long,
+        durationMinutes: Int,
+        timeZoneId: String,
+        repeat: String,
+        calendar: String,
+        encryption: String,
+        inviteeUserIds: List<String>
+    ): ScheduledMeetingSignal? {
+        val index = scheduledMeetingSignals.indexOfFirst { it.signalId == signalId }
+        if (index < 0) return null
+        val updatedSignal = scheduledMeetingSignals[index].copy(
+            topic = topic,
+            startTime = startTime,
+            durationMinutes = durationMinutes,
+            timeZoneId = timeZoneId,
+            repeat = repeat,
+            calendar = calendar,
+            encryption = encryption,
+            inviteeUserIds = inviteeUserIds.distinct()
+        )
+        scheduledMeetingSignals[index] = updatedSignal
+        persistRuntimeScheduledMeetingSignals()
+        bumpRuntimeDataVersion()
+        return updatedSignal
+    }
+
+    fun updateScheduledMeetingInvitees(
+        signalId: String,
+        inviteeUserIds: List<String>
+    ): ScheduledMeetingSignal? {
+        val index = scheduledMeetingSignals.indexOfFirst { it.signalId == signalId }
+        if (index < 0) return null
+        val updatedSignal = scheduledMeetingSignals[index].copy(
+            inviteeUserIds = inviteeUserIds.distinct()
+        )
+        scheduledMeetingSignals[index] = updatedSignal
+        persistRuntimeScheduledMeetingSignals()
+        bumpRuntimeDataVersion()
+        return updatedSignal
+    }
+
     fun addRuntimeChatMessage(meetingId: String, content: String): Message {
         val currentUser = getCurrentUser()
         val timestamp = System.currentTimeMillis()
         val message = Message(
-            messageId = "runtime_msg_${timestamp}_${runtimeChatMessages.size + 1}",
+            messageId = "${RuntimeSignalPrefixes.RUNTIME_MESSAGE_ID_PREFIX}${timestamp}_${runtimeChatMessages.size + 1}",
             meetingId = meetingId,
             senderId = currentUser.userId,
             senderName = currentUser.username,
@@ -225,8 +294,8 @@ object DataRepository {
 
         runtimeJoinHistoryActions.add(
             JoinMeetingHistoryAction(
-                actionId = "join_history_${now}_${runtimeJoinHistoryActions.size + 1}",
-                actionType = "USED",
+                actionId = "${RuntimeSignalPrefixes.JOIN_HISTORY_ACTION_ID_PREFIX}${now}_${runtimeJoinHistoryActions.size + 1}",
+                actionType = JoinHistoryActionTypes.USED,
                 meetingNumber = meetingNumber,
                 title = resolvedTitle,
                 occurredAt = now
@@ -242,8 +311,8 @@ object DataRepository {
         val now = System.currentTimeMillis()
         runtimeJoinHistoryActions.add(
             JoinMeetingHistoryAction(
-                actionId = "join_history_${now}_${runtimeJoinHistoryActions.size + 1}",
-                actionType = "CLEARED",
+                actionId = "${RuntimeSignalPrefixes.JOIN_HISTORY_ACTION_ID_PREFIX}${now}_${runtimeJoinHistoryActions.size + 1}",
+                actionType = JoinHistoryActionTypes.CLEARED,
                 occurredAt = now
             )
         )
@@ -255,15 +324,19 @@ object DataRepository {
         actionType: String,
         meetingId: String,
         targetUserIds: List<String> = emptyList(),
-        note: String = ""
+        note: String = "",
+        screenSharingEnabled: Boolean? = null,
+        shareCode: String = ""
     ): MeetingActionSignal {
         val timestamp = System.currentTimeMillis()
         val action = MeetingActionSignal(
-            actionId = "meeting_action_${timestamp}_${runtimeMeetingActions.size + 1}",
+            actionId = "${RuntimeSignalPrefixes.MEETING_ACTION_ID_PREFIX}${timestamp}_${runtimeMeetingActions.size + 1}",
             meetingId = meetingId,
             actionType = actionType,
             targetUserIds = targetUserIds,
             note = note,
+            screenSharingEnabled = screenSharingEnabled,
+            shareCode = shareCode,
             occurredAt = timestamp
         )
         runtimeMeetingActions.add(action)
@@ -272,8 +345,40 @@ object DataRepository {
         return action
     }
 
+    fun startShareScreenSession(shareCode: String): MeetingActionSignal {
+        val normalizedShareCode = shareCode.filter { it.isDigit() }.take(8)
+        stopActiveScreenShareSession(note = "Replaced by a new Share Page session")
+        setCurrentMeeting(null)
+        val meetingId = getCurrentMeeting().meetingId
+        activeScreenShareSession = ActiveScreenShareSession(
+            meetingId = meetingId,
+            shareCode = normalizedShareCode
+        )
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.SCREEN_SHARE_STATUS_CHANGED,
+            meetingId = meetingId,
+            note = "Screen share started from Share Page",
+            screenSharingEnabled = true,
+            shareCode = normalizedShareCode
+        )
+    }
+
+    fun stopCurrentScreenShareSessionIfActive(): MeetingActionSignal? {
+        val currentMeetingId = getCurrentMeeting().meetingId
+        val activeSession = activeScreenShareSession ?: return null
+        if (activeSession.meetingId != currentMeetingId) return null
+        activeScreenShareSession = null
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.SCREEN_SHARE_STATUS_CHANGED,
+            meetingId = activeSession.meetingId,
+            note = "Screen share stopped after leaving the meeting",
+            screenSharingEnabled = false,
+            shareCode = activeSession.shareCode
+        )
+    }
+
     fun isRuntimeScheduledMeeting(meetingId: String): Boolean {
-        return meetingId.startsWith(runtimeMeetingIdPrefix)
+        return meetingId.startsWith(RuntimeSignalPrefixes.RUNTIME_MEETING_ID_PREFIX)
     }
 
     private fun resetRuntimeSignalData() {
@@ -282,6 +387,8 @@ object DataRepository {
         runtimeJoinHistoryEntries = defaultJoinHistoryEntries()
         runtimeJoinHistoryActions = mutableListOf()
         runtimeMeetingActions = mutableListOf()
+        activeScreenShareSession = null
+        currentMeetingId = DEFAULT_CURRENT_MEETING_ID
 
         persistRuntimeScheduledMeetingSignals()
         persistRuntimeChatMessages()
@@ -330,13 +437,13 @@ object DataRepository {
 
     private fun persistRuntimeScheduledMeetingSignals() {
         runCatching {
-            runtimeScheduledMeetingFile().writeText(gson.toJson(scheduledMeetingSignals))
+            runtimeScheduledMeetingFile().writeText(gson.toJson(scheduledMeetingSignals), Charsets.UTF_8)
         }
     }
 
     private fun persistRuntimeChatMessages() {
         runCatching {
-            runtimeChatMessageFile().writeText(gson.toJson(runtimeChatMessages))
+            runtimeChatMessageFile().writeText(gson.toJson(runtimeChatMessages), Charsets.UTF_8)
         }
     }
 
@@ -346,30 +453,42 @@ object DataRepository {
                 entries = runtimeJoinHistoryEntries,
                 actions = runtimeJoinHistoryActions
             )
-            runtimeJoinHistoryFile().writeText(gson.toJson(payload))
+            runtimeJoinHistoryFile().writeText(gson.toJson(payload), Charsets.UTF_8)
         }
     }
 
     private fun persistRuntimeMeetingActions() {
         runCatching {
-            runtimeMeetingActionFile().writeText(gson.toJson(runtimeMeetingActions))
+            runtimeMeetingActionFile().writeText(gson.toJson(runtimeMeetingActions), Charsets.UTF_8)
         }
     }
 
+    private fun stopActiveScreenShareSession(note: String): MeetingActionSignal? {
+        val activeSession = activeScreenShareSession ?: return null
+        activeScreenShareSession = null
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.SCREEN_SHARE_STATUS_CHANGED,
+            meetingId = activeSession.meetingId,
+            note = note,
+            screenSharingEnabled = false,
+            shareCode = activeSession.shareCode
+        )
+    }
+
     private fun runtimeScheduledMeetingFile(): File {
-        return File(appContext.filesDir, runtimeScheduledMeetingFileName)
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_SCHEDULED_MEETINGS)
     }
 
     private fun runtimeChatMessageFile(): File {
-        return File(appContext.filesDir, runtimeChatMessageFileName)
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_CHAT_MESSAGES)
     }
 
     private fun runtimeJoinHistoryFile(): File {
-        return File(appContext.filesDir, runtimeJoinHistoryFileName)
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY)
     }
 
     private fun runtimeMeetingActionFile(): File {
-        return File(appContext.filesDir, runtimeMeetingActionFileName)
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS)
     }
 
     private fun bumpRuntimeDataVersion() {

@@ -34,12 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.data.DataRepository
+import com.example.zoom.R
 import com.example.zoom.ui.components.ZoomActionPageTopBar
 import com.example.zoom.ui.components.ZoomInsetDivider
 import com.example.zoom.ui.components.ZoomPageSurface
@@ -63,9 +64,10 @@ fun JoinMeetingScreen(
             }
         }
     }
+    val presenter = remember(view) { JoinMeetingPresenter(view) }
 
     LaunchedEffect(Unit) {
-        JoinMeetingPresenter(view).loadData()
+        presenter.loadData()
     }
 
     uiState?.let { screenState ->
@@ -82,7 +84,7 @@ fun JoinMeetingScreen(
             Scaffold(
                 topBar = {
                     ZoomActionPageTopBar(
-                        title = "Join meeting",
+                        title = stringResource(R.string.join_meeting_title),
                         onCancelClick = onBackClick
                     )
                 }
@@ -104,12 +106,12 @@ fun JoinMeetingScreen(
                                 meetingId = input.filter { it.isDigit() }.take(9)
                             },
                             onHistoryClick = {
-                                historyItems = currentJoinHistoryItems()
+                                historyItems = presenter.refreshHistory()
                                 showHistorySheet = true
                             }
                         )
                         Text(
-                            text = "Join with a personal link name",
+                            text = stringResource(R.string.join_meeting_personal_link),
                             color = ZoomBlue,
                             fontSize = 15.sp,
                             modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 18.dp)
@@ -121,19 +123,16 @@ fun JoinMeetingScreen(
                     SimpleInputField(
                         value = screenName,
                         onValueChange = { screenName = it },
-                        placeholder = "Screen name"
+                        placeholder = stringResource(R.string.join_meeting_screen_name_placeholder)
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
                     ZoomPrimaryActionButton(
-                        text = "Join",
+                        text = stringResource(R.string.join_meeting_action_join),
                         onClick = {
-                            DataRepository.recordJoinHistoryUsed(
-                                meetingNumber = meetingId,
-                                title = "${DataRepository.getCurrentUser().username}'s Zoom Meeting"
-                            )
-                            historyItems = currentJoinHistoryItems()
+                            presenter.recordJoinByMeetingNumber(meetingNumber = meetingId)
+                            historyItems = presenter.refreshHistory()
                             onJoinMeetingClick()
                         },
                         enabled = isMeetingIdValid,
@@ -141,7 +140,7 @@ fun JoinMeetingScreen(
                     )
 
                     Text(
-                        text = "If you received an invitation link, tap on the link again to join the meeting",
+                        text = stringResource(R.string.join_meeting_invitation_hint),
                         color = ZoomTextSecondary,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
@@ -150,7 +149,7 @@ fun JoinMeetingScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Text(
-                        text = "Join options",
+                        text = stringResource(R.string.join_meeting_options_title),
                         fontSize = 14.sp,
                         color = ZoomTextSecondary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -158,13 +157,13 @@ fun JoinMeetingScreen(
 
                     Column(modifier = Modifier.background(Color.White)) {
                         ZoomSettingSwitchRow(
-                            title = "Don't connect to audio",
+                            title = stringResource(R.string.join_meeting_option_no_audio),
                             checked = audioOff,
                             onCheckedChange = { audioOff = it }
                         )
                         ZoomInsetDivider()
                         ZoomSettingSwitchRow(
-                            title = "Turn off my video",
+                            title = stringResource(R.string.join_meeting_option_video_off),
                             checked = videoOff,
                             onCheckedChange = { videoOff = it }
                         )
@@ -177,16 +176,13 @@ fun JoinMeetingScreen(
                     items = historyItems,
                     onItemClick = { item ->
                         meetingId = item.meetingNumber
-                        DataRepository.recordJoinHistoryUsed(
-                            meetingNumber = item.meetingNumber,
-                            title = item.title
-                        )
-                        historyItems = currentJoinHistoryItems()
+                        presenter.recordJoinByHistoryItem(item)
+                        historyItems = presenter.refreshHistory()
                         showHistorySheet = false
                     },
                     onClearHistory = {
-                        DataRepository.clearJoinHistoryEntries()
-                        historyItems = currentJoinHistoryItems()
+                        presenter.clearHistory()
+                        historyItems = presenter.refreshHistory()
                     },
                     onDoneClick = { showHistorySheet = false },
                     onDismiss = { showHistorySheet = false }
@@ -220,7 +216,11 @@ private fun MeetingIdField(
             ),
             decorationBox = { innerTextField ->
                 if (value.isEmpty()) {
-                    Text("Meeting ID", color = Color(0xFFA7B0BC), fontSize = 18.sp)
+                    Text(
+                        stringResource(R.string.join_meeting_id_placeholder),
+                        color = Color(0xFFA7B0BC),
+                        fontSize = 18.sp
+                    )
                 }
                 innerTextField()
             }
@@ -231,7 +231,7 @@ private fun MeetingIdField(
         ) {
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Open meeting history",
+                contentDescription = stringResource(R.string.join_meeting_open_history),
                 tint = Color(0xFFB6BFCA)
             )
         }
@@ -308,13 +308,13 @@ private fun JoinMeetingHistoryOverlay(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Clear history",
+                    text = stringResource(R.string.join_meeting_clear_history),
                     color = ZoomBlue,
                     fontSize = 17.sp,
                     modifier = Modifier.clickable(onClick = onClearHistory)
                 )
                 Text(
-                    text = "Done",
+                    text = stringResource(R.string.common_done),
                     color = ZoomBlue,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Medium,
@@ -330,7 +330,7 @@ private fun JoinMeetingHistoryOverlay(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No meeting history",
+                        text = stringResource(R.string.join_meeting_no_history),
                         color = ZoomTextSecondary,
                         fontSize = 15.sp
                     )
@@ -386,13 +386,4 @@ private fun JoinMeetingHistoryRow(
 
 private fun formatMeetingNumber(value: String): String {
     return value.chunked(3).joinToString(" ")
-}
-
-private fun currentJoinHistoryItems(): List<JoinMeetingHistoryItem> {
-    return DataRepository.getJoinHistoryEntries().map { entry ->
-        JoinMeetingHistoryItem(
-            title = entry.title,
-            meetingNumber = entry.meetingNumber
-        )
-    }
 }

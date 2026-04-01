@@ -39,7 +39,8 @@ enum class MeetingAudioOption(val routeValue: String, val label: String) {
 data class MeetingSessionConfig(
     val microphoneOn: Boolean,
     val cameraOn: Boolean,
-    val audioOption: MeetingAudioOption
+    val audioOption: MeetingAudioOption,
+    val screenSharingEnabled: Boolean = false
 )
 
 @Composable
