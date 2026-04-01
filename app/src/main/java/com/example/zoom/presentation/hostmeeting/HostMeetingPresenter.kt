@@ -1,5 +1,7 @@
 package com.example.zoom.presentation.hostmeeting
 
+import com.example.zoom.data.DataRepository
+
 class HostMeetingPresenter(
     private val view: HostMeetingContract.View
 ) : HostMeetingContract.Presenter {
@@ -10,6 +12,13 @@ class HostMeetingPresenter(
                 videoOn = true,
                 usePersonalMeetingId = false
             )
+        )
+    }
+
+    override fun prepareMeetingSession(usePersonalMeetingId: Boolean, videoOn: Boolean): String {
+        return DataRepository.prepareHostMeetingSession(
+            usePersonalMeetingId = usePersonalMeetingId,
+            videoOn = videoOn
         )
     }
 }

@@ -2,6 +2,61 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-04-01 More Page Contacts Entry Alignment)
+
+Aligned the newly added page-tree `Contacts Page` under `More Page` with the existing contacts/direct-message flow:
+
+1. Added stable shortcut action identifiers to the shared `More Page` MVP state instead of relying on label text.
+2. Wired the bottom-navigation `More Page` shortcut grid so tapping `Contacts` now closes the overlay and opens the existing `Contacts` page.
+3. Kept the earlier `Team Chat` floating-action `+ -> Contacts` path as a secondary shortcut entry.
+4. Kept `Contacts -> Direct Chat` unchanged, so direct messages still write to `runtime_direct_messages.json`.
+5. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
+## Latest Update (2026-04-01 Detection Task Gap Closure: Instant Meeting Identity + Profile + Contacts)
+
+Implemented the audited detection-task gaps so the remaining host/join/profile/contact/schedule flows are no longer UI-only:
+
+1. Added runtime-backed instant meeting identity flow:
+   - `Host Meeting` now creates a real runtime instant-meeting session before preview.
+   - `Join Meeting` now binds the typed meeting number to the current meeting context before preview.
+   - `Meeting Preview`, `Meeting info`, in-meeting actions, and runtime meeting action logs now use the real meeting number instead of falling back to the default static meeting.
+2. Expanded runtime JSON persistence:
+   - added `runtime_instant_meetings.json`
+   - added `runtime_profile_state.json`
+   - added `runtime_direct_messages.json`
+   - kept startup reset behavior, so these records are cleared on a fresh run while static contacts remain unchanged
+3. Added profile-edit flows in MVP:
+   - `Availability` is now editable and supports switching to `Busy`
+   - `Display name` is now editable and persists to runtime profile state
+   - profile/detail pages refresh from runtime state after edits
+4. Added contacts/direct-message flow in MVP:
+   - `Team Chat` floating action now opens a dedicated `Contacts` page with total contact count
+   - tapping a contact opens a direct-chat page
+   - sending a direct message writes to `runtime_direct_messages.json`
+   - latest direct-chat threads now appear in `Team Chat`
+5. Completed missing meeting/schedule behavior wiring:
+   - in-meeting `Raise hand`, `Lower hand`, emoji reactions, safe-driving `Hello`, screen-share toggles, and invite-link copy now write to `runtime_meeting_actions.json`
+   - in-meeting `Invite contacts` now updates the live meeting participant source instead of only logging
+   - scheduled meetings now persist real `meetingNumber`, `passcode`, `waitingRoomEnabled`, and `usePersonalMeetingId`
+   - `Schedule Meeting` invite picker and schedule-detail invite popup now support selecting all contacts
+   - `Schedule Meeting Detailed` now shows `Meeting ID` and `Waiting room`, and supports canceling a runtime scheduled meeting
+6. Supporting UX improvements:
+   - `Home` upcoming meetings header now shows the total count
+   - meeting invite text now uses the actual meeting number instead of the internal runtime record id
+   - calendar detailed description now includes meeting ID and waiting-room state for runtime schedules
+7. Build verification:
+   - Ran `./gradlew.bat :app:compileDebugKotlin` successfully.
+
+### New runtime files
+- `runtime_scheduled_meetings.json`
+- `runtime_instant_meetings.json`
+- `runtime_chat_messages.json`
+- `runtime_direct_messages.json`
+- `runtime_join_history.json`
+- `runtime_meeting_actions.json`
+- `runtime_profile_state.json`
+
 ## Latest Update (2026-04-01 Share Page Input Flow + Screen Share Runtime Signal)
 
 Implemented the latest `开发需求.md` current task for `Share Page`:

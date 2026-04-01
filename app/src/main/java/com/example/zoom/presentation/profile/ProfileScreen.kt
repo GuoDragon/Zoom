@@ -23,6 +23,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.model.User
+import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.components.ProfileCard
 import com.example.zoom.ui.components.ProfileCardDivider
 import com.example.zoom.ui.components.ProfileIdentityHeader
@@ -46,20 +49,24 @@ import com.example.zoom.ui.theme.ZoomGreen
 fun ProfileScreen(
     onBackClick: () -> Unit,
     onDetailedInfoClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onAvailabilityClick: () -> Unit
 ) {
-    val currentUser = remember { mutableStateOf<User?>(null) }
+    val uiState = remember { mutableStateOf<ProfileUiState?>(null) }
 
     val view = remember {
         object : ProfileContract.View {
-            override fun showUser(user: User) {
-                currentUser.value = user
+            override fun showUser(state: ProfileUiState) {
+                uiState.value = state
             }
         }
     }
 
-    LaunchedEffect(Unit) {
-        ProfilePresenter(view).loadData()
+    val presenter = remember(view) { ProfilePresenter(view) }
+    val runtimeVersion by DataRepository.observeMeetingDataVersion().collectAsState()
+
+    LaunchedEffect(presenter, runtimeVersion) {
+        presenter.loadData()
     }
 
     Scaffold(
@@ -76,7 +83,8 @@ fun ProfileScreen(
             )
         }
     ) { padding ->
-        currentUser.value?.let { user ->
+        uiState.value?.let { state ->
+            val user = state.user
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -102,13 +110,14 @@ fun ProfileScreen(
                             ProfileMenuRow(
                                 icon = Icons.Default.CheckCircle,
                                 title = "Availability",
-                                trailing = "Available",
-                                tint = ZoomGreen
+                                trailing = state.availability,
+                                tint = ZoomGreen,
+                                onClick = onAvailabilityClick
                             ),
                             ProfileMenuRow(
                                 icon = Icons.Default.EmojiEmotions,
                                 title = "Status",
-                                trailing = "What is your status?"
+                                trailing = state.statusText
                             ),
                             ProfileMenuRow(
                                 icon = Icons.Default.Circle,
@@ -123,7 +132,8 @@ fun ProfileScreen(
                                     title = item.title,
                                     leadingIcon = item.icon,
                                     iconTint = item.tint,
-                                    trailingText = item.trailing
+                                    trailingText = item.trailing,
+                                    onClick = item.onClick
                                 )
                                 if (index != statusRows.lastIndex) {
                                     ProfileCardDivider()

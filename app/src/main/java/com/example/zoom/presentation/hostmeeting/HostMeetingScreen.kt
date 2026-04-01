@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
+import com.example.zoom.ui.components.MeetingAudioOption
+import com.example.zoom.ui.components.MeetingSessionConfig
 import com.example.zoom.ui.components.ZoomActionPageTopBar
 import com.example.zoom.ui.components.ZoomInsetDivider
 import com.example.zoom.ui.components.ZoomPageSurface
@@ -24,7 +26,7 @@ import com.example.zoom.ui.components.ZoomSettingSwitchRow
 @Composable
 fun HostMeetingScreen(
     onBackClick: () -> Unit,
-    onStartMeetingClick: () -> Unit
+    onStartMeetingClick: (String, MeetingSessionConfig) -> Unit
 ) {
     var uiState by remember { mutableStateOf<HostMeetingUiState?>(null) }
 
@@ -35,9 +37,10 @@ fun HostMeetingScreen(
             }
         }
     }
+    val presenter = remember(view) { HostMeetingPresenter(view) }
 
-    LaunchedEffect(Unit) {
-        HostMeetingPresenter(view).loadData()
+    LaunchedEffect(presenter) {
+        presenter.loadData()
     }
 
     uiState?.let { screenState ->
@@ -73,7 +76,20 @@ fun HostMeetingScreen(
                 Spacer(modifier = Modifier.height(28.dp))
                 ZoomPrimaryActionButton(
                     text = "Start a meeting",
-                    onClick = onStartMeetingClick,
+                    onClick = {
+                        val meetingId = presenter.prepareMeetingSession(
+                            usePersonalMeetingId = usePersonalMeetingId,
+                            videoOn = videoOn
+                        )
+                        onStartMeetingClick(
+                            meetingId,
+                            MeetingSessionConfig(
+                                microphoneOn = false,
+                                cameraOn = videoOn,
+                                audioOption = MeetingAudioOption.WifiOrCellular
+                            )
+                        )
+                    },
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }

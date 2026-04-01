@@ -29,10 +29,10 @@ class ScheduleMeetingPresenter(
                 },
                 repeat = signal.repeat,
                 calendar = signal.calendar,
-                usePersonalMeetingId = false,
-                requirePasscode = true,
-                passcode = "d3L4Sh",
-                waitingRoom = false,
+                usePersonalMeetingId = signal.usePersonalMeetingId,
+                requirePasscode = signal.passcode.isNotBlank(),
+                passcode = signal.passcode,
+                waitingRoom = signal.waitingRoomEnabled,
                 encryption = signal.encryption,
                 inviteeUserIds = signal.inviteeUserIds.toSet(),
                 continuousMeetingChat = true,
@@ -105,7 +105,10 @@ class ScheduleMeetingPresenter(
                 repeat = draft.repeat,
                 calendar = draft.calendar,
                 encryption = draft.encryption,
-                inviteeUserIds = draft.inviteeUserIds.toList()
+                inviteeUserIds = draft.inviteeUserIds.toList(),
+                passcode = draft.passcode,
+                waitingRoomEnabled = draft.waitingRoom,
+                usePersonalMeetingId = draft.usePersonalMeetingId
             ) ?: DataRepository.addScheduledMeetingSignal(
                 topic = draft.meetingTitle,
                 startTime = draft.startTimeMillis,
@@ -114,7 +117,10 @@ class ScheduleMeetingPresenter(
                 repeat = draft.repeat,
                 calendar = draft.calendar,
                 encryption = draft.encryption,
-                inviteeUserIds = draft.inviteeUserIds.toList()
+                inviteeUserIds = draft.inviteeUserIds.toList(),
+                passcode = draft.passcode,
+                waitingRoomEnabled = draft.waitingRoom,
+                usePersonalMeetingId = draft.usePersonalMeetingId
             )
         } else {
             DataRepository.addScheduledMeetingSignal(
@@ -125,7 +131,10 @@ class ScheduleMeetingPresenter(
                 repeat = draft.repeat,
                 calendar = draft.calendar,
                 encryption = draft.encryption,
-                inviteeUserIds = draft.inviteeUserIds.toList()
+                inviteeUserIds = draft.inviteeUserIds.toList(),
+                passcode = draft.passcode,
+                waitingRoomEnabled = draft.waitingRoom,
+                usePersonalMeetingId = draft.usePersonalMeetingId
             )
         }
         view.onMeetingSaved(signal.signalId)

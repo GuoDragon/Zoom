@@ -12,6 +12,17 @@ interface MoreContract {
     }
 }
 
+enum class MoreShortcutAction {
+    WHITEBOARDS,
+    EVENTS,
+    APPS,
+    CONTACTS,
+    CLIPS,
+    NOTES,
+    TASKS,
+    SCHEDULER
+}
+
 data class MoreUiState(
     val shortcutActions: List<MoreShortcutUiState>,
     val promoBadge: String,
@@ -21,6 +32,7 @@ data class MoreUiState(
 )
 
 data class MoreShortcutUiState(
+    val action: MoreShortcutAction,
     val label: String,
     val icon: ImageVector
 )

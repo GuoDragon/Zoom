@@ -7,6 +7,7 @@ interface HostMeetingContract {
 
     interface Presenter {
         fun loadData()
+        fun prepareMeetingSession(usePersonalMeetingId: Boolean, videoOn: Boolean): String
     }
 }
 

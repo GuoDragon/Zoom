@@ -33,7 +33,8 @@ class HomePresenter(private val view: HomeContract.View) : HomeContract.Presente
         view.showHomeState(
             HomeUiState(
                 currentUser = currentUser,
-                upcomingMeetings = meetings
+                upcomingMeetings = meetings,
+                upcomingCount = meetings.size
             )
         )
     }

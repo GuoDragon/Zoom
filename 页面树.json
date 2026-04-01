@@ -114,6 +114,8 @@
         },
         "Mail Page": {},
         "Expansion Page": {},
-        "More Page": {}
+        "More Page": {
+            "Contacts Page": {}
+        }
     }
 }

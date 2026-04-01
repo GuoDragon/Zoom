@@ -40,7 +40,10 @@ import androidx.compose.ui.unit.sp
 import com.example.zoom.ui.theme.ZoomBlue
 
 @Composable
-fun MorePageOverlay(onDismiss: () -> Unit) {
+fun MorePageOverlay(
+    onDismiss: () -> Unit,
+    onShortcutClick: (MoreShortcutAction) -> Unit = {}
+) {
     var uiState by remember { mutableStateOf<MoreUiState?>(null) }
     val dismissInteraction = remember { MutableInteractionSource() }
 
@@ -95,7 +98,10 @@ fun MorePageOverlay(onDismiss: () -> Unit) {
                             .align(Alignment.End)
                             .padding(top = 18.dp, end = 20.dp, bottom = 10.dp)
                     )
-                    ShortcutGrid(actions = screenState.shortcutActions)
+                    ShortcutGrid(
+                        actions = screenState.shortcutActions,
+                        onActionClick = onShortcutClick
+                    )
                 }
             }
         }
@@ -163,7 +169,10 @@ private fun PromoBanner(
 }
 
 @Composable
-private fun ShortcutGrid(actions: List<MoreShortcutUiState>) {
+private fun ShortcutGrid(
+    actions: List<MoreShortcutUiState>,
+    onActionClick: (MoreShortcutAction) -> Unit
+) {
     HorizontalDivider(color = Color(0xFFE8EBF0))
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
@@ -174,17 +183,23 @@ private fun ShortcutGrid(actions: List<MoreShortcutUiState>) {
         userScrollEnabled = false
     ) {
         items(actions) { action ->
-            ShortcutItem(action = action)
+            ShortcutItem(
+                action = action,
+                onClick = { onActionClick(action.action) }
+            )
         }
     }
 }
 
 @Composable
-private fun ShortcutItem(action: MoreShortcutUiState) {
+private fun ShortcutItem(
+    action: MoreShortcutUiState,
+    onClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = {})
+            .clickable(onClick = onClick)
             .padding(top = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

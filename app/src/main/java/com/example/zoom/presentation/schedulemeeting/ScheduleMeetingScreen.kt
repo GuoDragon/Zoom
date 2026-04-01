@@ -122,6 +122,9 @@ fun ScheduleMeetingScreen(
                         inviteeWorkingSet + userId
                     }
                 },
+                onSelectAll = {
+                    inviteeWorkingSet = screenState.inviteeOptions.map { it.userId }.toSet()
+                },
                 onCancel = {
                     inviteeWorkingSet = screenDraft.inviteeUserIds
                     subPage = ScheduleMeetingSubPage.MAIN

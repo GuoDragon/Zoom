@@ -1,5 +1,8 @@
 package com.example.zoom.presentation.meetingparticipantsdetailed
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +75,7 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
     var contactSearchQuery by remember { mutableStateOf("") }
     var showParticipantsMoreMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val view = remember {
         object : MeetingParticipantsDetailedContract.View {
@@ -141,6 +146,11 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                                 contactSearchQuery = ""
                                 currentPage = ParticipantsSubPage.INVITE_CONTACTS
                             }
+                            "Copy invite link" -> {
+                                val copiedLink = presenter.copyInviteLink(displayState.meetingId)
+                                copyToClipboard(context, copiedLink)
+                                currentPage = ParticipantsSubPage.PARTICIPANTS
+                            }
                         }
                     },
                     onCancel = { currentPage = ParticipantsSubPage.PARTICIPANTS }
@@ -167,6 +177,7 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                             meetingId = displayState.meetingId,
                             selectedContactIds = selectedContactIds
                         )
+                        presenter.loadData()
                         currentPage = ParticipantsSubPage.ADD_INVITE
                     }
                 )
@@ -182,6 +193,11 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+private fun copyToClipboard(context: Context, text: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText("Zoom Invite Link", text))
 }
 
 // ── Page 1: Participants List ────────────────────────────────────────────

@@ -69,7 +69,8 @@ fun ScheduleMeetingDetailedScreen(
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
     onStartClick: (String) -> Unit,
-    onChatClick: (String) -> Unit
+    onChatClick: (String) -> Unit,
+    onMeetingCancelled: () -> Unit
 ) {
     var uiState by remember { mutableStateOf<ScheduleMeetingDetailedUiState?>(null) }
     var showInviteesPopup by remember { mutableStateOf(false) }
@@ -166,6 +167,12 @@ fun ScheduleMeetingDetailedScreen(
                     )
                     ZoomInsetDivider()
                     ZoomSettingValueRow(
+                        title = "Meeting ID",
+                        value = state.meetingNumberLabel,
+                        showChevron = false
+                    )
+                    ZoomInsetDivider()
+                    ZoomSettingValueRow(
                         title = "Duration",
                         value = state.durationLabel,
                         showChevron = false
@@ -174,6 +181,12 @@ fun ScheduleMeetingDetailedScreen(
                     ZoomSettingValueRow(
                         title = "Invitees",
                         value = state.inviteeSummary,
+                        showChevron = false
+                    )
+                    ZoomInsetDivider()
+                    ZoomSettingValueRow(
+                        title = "Waiting room",
+                        value = state.waitingRoomLabel,
                         showChevron = false
                     )
                 }
@@ -261,6 +274,28 @@ fun ScheduleMeetingDetailedScreen(
                     HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFE7EBF0))
                 }
             }
+
+            if (state.canEdit) {
+                item {
+                    Text(
+                        text = "Cancel meeting",
+                        color = Color(0xFFD94C45),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .fillMaxWidth()
+                            .background(Color(0xFFFFF1F0), RoundedCornerShape(12.dp))
+                            .clickable {
+                                if (presenter.cancelMeeting(state.meetingId)) {
+                                    onMeetingCancelled()
+                                }
+                            }
+                            .padding(vertical = 14.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
         }
     }
 
@@ -284,6 +319,9 @@ fun ScheduleMeetingDetailedScreen(
             onInviteContactsConfirm = {
                 presenter.updateInvitees(meetingId = state.meetingId, inviteeUserIds = inviteeWorkingSet)
                 showInviteesPopup = false
+            },
+            onSelectAllInvitees = {
+                inviteeWorkingSet = state.inviteeOptions.map { it.userId }.toSet()
             }
         )
     }
@@ -330,7 +368,8 @@ private fun ScheduleMeetingInviteesPopup(
     onToggleUser: (String) -> Unit,
     onPageChange: (ScheduleInvitePopupPage) -> Unit,
     onDismiss: () -> Unit,
-    onInviteContactsConfirm: () -> Unit
+    onInviteContactsConfirm: () -> Unit,
+    onSelectAllInvitees: () -> Unit
 ) {
     val filteredInvitees = invitees.filter {
         query.isBlank() ||
@@ -484,7 +523,17 @@ private fun ScheduleMeetingInviteesPopup(
                             modifier = Modifier.weight(1f),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
-                        if (selectedUserIds.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "All",
+                                color = ZoomBlue,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                                    .padding(end = 10.dp)
+                                    .clickable(onClick = onSelectAllInvitees)
+                            )
+                            if (selectedUserIds.isNotEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .background(ZoomBlue, RoundedCornerShape(8.dp))
@@ -498,8 +547,9 @@ private fun ScheduleMeetingInviteesPopup(
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-                        } else {
-                            Spacer(modifier = Modifier.size(56.dp))
+                            } else {
+                                Spacer(modifier = Modifier.size(56.dp))
+                            }
                         }
                     }
 

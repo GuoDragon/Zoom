@@ -16,7 +16,8 @@ interface HomeContract {
 
 data class HomeUiState(
     val currentUser: User,
-    val upcomingMeetings: List<HomeMeetingCardUi>
+    val upcomingMeetings: List<HomeMeetingCardUi>,
+    val upcomingCount: Int
 )
 
 data class HomeMeetingCardUi(

@@ -44,6 +44,7 @@ import com.example.zoom.data.DataRepository
 import com.example.zoom.navigation.MeetingExitAction
 import com.example.zoom.navigation.Screen
 import com.example.zoom.navigation.ZoomNavGraph
+import com.example.zoom.presentation.more.MoreShortcutAction
 import com.example.zoom.presentation.more.MorePageOverlay
 import com.example.zoom.ui.components.MeetingSessionConfig
 import com.example.zoom.ui.theme.ZoomBlue
@@ -176,7 +177,20 @@ fun ZoomApp() {
             )
 
             if (showMoreOverlay && currentRoute in bottomBarRoutes) {
-                MorePageOverlay(onDismiss = { showMoreOverlay = false })
+                MorePageOverlay(
+                    onDismiss = { showMoreOverlay = false },
+                    onShortcutClick = { action ->
+                        when (action) {
+                            MoreShortcutAction.CONTACTS -> {
+                                showMoreOverlay = false
+                                navController.navigate(Screen.Contacts.route) {
+                                    launchSingleTop = true
+                                }
+                            }
+                            else -> Unit
+                        }
+                    }
+                )
             }
 
             // PiP overlay

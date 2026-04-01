@@ -1,7 +1,5 @@
 package com.example.zoom.presentation.teamchat
 
-import com.example.zoom.model.Message
-
 interface TeamChatContract {
     interface View {
         fun showUiState(state: TeamChatUiState)
@@ -13,5 +11,15 @@ interface TeamChatContract {
 
 data class TeamChatUiState(
     val currentUserInitial: String,
-    val chats: List<Message>
+    val chats: List<TeamChatThreadUi>
+)
+
+data class TeamChatThreadUi(
+    val threadId: String,
+    val title: String,
+    val preview: String,
+    val dateLabel: String,
+    val avatarText: String,
+    val sortTimestamp: Long,
+    val directUserId: String? = null
 )

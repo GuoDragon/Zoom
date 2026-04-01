@@ -19,7 +19,8 @@ class MeetingParticipantsDetailedPresenter(
         val currentUser = DataRepository.getCurrentUser()
         val meeting = DataRepository.getCurrentMeeting()
         val meetingParticipants = DataRepository.getParticipantsForMeeting(meeting.meetingId)
-        val allUsers = DataRepository.getUsers()
+            .filterNot { it.userId == currentUser.userId }
+        val allUsers = DataRepository.getContacts()
 
         // Build participant list: current user as Host first, then others
         val participants = mutableListOf<MeetingParticipantUi>()
@@ -63,7 +64,7 @@ class MeetingParticipantsDetailedPresenter(
         val inviteMessageText = buildMeetingInviteMessageText(
             hostName = currentUser.username,
             meetingTopic = meeting.topic,
-            meetingId = meeting.meetingId
+            meetingId = DataRepository.getMeetingNumber(meeting.meetingId)
         )
 
         val contacts = allUsers
@@ -111,7 +112,7 @@ class MeetingParticipantsDetailedPresenter(
     ): List<MeetingParticipantUi> {
         val targetIds = participants.filterNot { it.isSelf }.map { it.userId }
         DataRepository.recordMeetingAction(
-            actionType = MeetingActionTypes.ASK_ALL_TO_UNMUTE,
+            actionType = MeetingActionTypes.UNMUTE_ALL,
             meetingId = meetingId,
             targetUserIds = targetIds
         )
@@ -124,16 +125,17 @@ class MeetingParticipantsDetailedPresenter(
         meetingId: String,
         selectedContactIds: Set<String>
     ) {
+        DataRepository.inviteContactsToMeeting(meetingId, selectedContactIds)
+    }
+
+    override fun copyInviteLink(meetingId: String): String {
+        val inviteLink = DataRepository.getMeetingInviteLink(meetingId)
         DataRepository.recordMeetingAction(
-            actionType = MeetingActionTypes.INVITE_CONTACTS,
+            actionType = MeetingActionTypes.COPY_INVITE_LINK,
             meetingId = meetingId,
-            targetUserIds = selectedContactIds.toList(),
-            note = if (selectedContactIds.isEmpty()) {
-                "No contacts selected"
-            } else {
-                "Selected contacts: ${selectedContactIds.joinToString(",")}"
-            }
+            note = inviteLink
         )
+        return inviteLink
     }
 
     private fun getInitials(name: String): String {

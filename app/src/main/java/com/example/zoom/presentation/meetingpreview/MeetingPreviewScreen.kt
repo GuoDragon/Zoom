@@ -49,6 +49,7 @@ import com.example.zoom.ui.components.ZoomPrimaryActionButton
 @Composable
 fun MeetingPreviewScreen(
     meetingId: String?,
+    initialConfig: MeetingSessionConfig,
     onLeaveClick: () -> Unit,
     onStartClick: (MeetingSessionConfig) -> Unit
 ) {
@@ -64,8 +65,8 @@ fun MeetingPreviewScreen(
 
     val presenter = remember(view) { MeetingPreviewPresenter(view) }
 
-    LaunchedEffect(presenter, meetingId) {
-        presenter.loadData(meetingId)
+    LaunchedEffect(presenter, meetingId, initialConfig) {
+        presenter.loadData(meetingId, initialConfig)
     }
 
     uiState?.let { screenState ->
@@ -73,8 +74,8 @@ fun MeetingPreviewScreen(
         var cameraOn by remember(screenState) { mutableStateOf(screenState.cameraOn) }
         var alwaysShowPreview by remember(screenState) { mutableStateOf(screenState.alwaysShowPreview) }
         var showAudioMenu by remember { mutableStateOf(false) }
-        var selectedAudioOption by remember {
-            mutableStateOf(MeetingAudioOption.WifiOrCellular)
+        var selectedAudioOption by remember(initialConfig) {
+            mutableStateOf(initialConfig.audioOption)
         }
 
         Scaffold(containerColor = Color.White) { padding ->

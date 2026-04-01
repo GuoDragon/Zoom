@@ -1,6 +1,7 @@
 package com.example.zoom.presentation.teamchat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -40,22 +42,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.model.Message
 import com.example.zoom.ui.components.ExpansionMenuItemUiState
 import com.example.zoom.ui.components.ExpansionMenuOverlay
 import com.example.zoom.ui.components.TopBarIconAction
 import com.example.zoom.ui.components.ZoomTopBar
 import com.example.zoom.ui.theme.ZoomBlue
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.zoom.data.DataRepository
 
 @Composable
 fun TeamChatScreen(
     onAvatarClick: () -> Unit,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onContactsClick: () -> Unit,
+    onDirectChatClick: (String) -> Unit
 ) {
-    val chatItems = remember { mutableStateListOf<Message>() }
+    val chatItems = remember { mutableStateListOf<TeamChatThreadUi>() }
     var avatarInitial by remember { mutableStateOf("?") }
     var selectedTab by remember { mutableIntStateOf(0) }
     var showMoreOverlay by remember { mutableStateOf(false) }
@@ -78,8 +79,9 @@ fun TeamChatScreen(
         }
     }
     val presenter = remember(view) { TeamChatPresenter(view) }
+    val runtimeVersion by DataRepository.observeMeetingDataVersion().collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(runtimeVersion) {
         presenter.loadData()
     }
 
@@ -105,7 +107,7 @@ fun TeamChatScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { },
+                onClick = onContactsClick,
                 containerColor = ZoomBlue
             ) {
                 Text(
@@ -139,7 +141,12 @@ fun TeamChatScreen(
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(chatItems) { chat ->
-                    ChatItem(chat)
+                    ChatItem(
+                        chat = chat,
+                        onClick = {
+                            chat.directUserId?.let(onDirectChatClick)
+                        }
+                    )
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                 }
             }
@@ -156,11 +163,14 @@ fun TeamChatScreen(
 }
 
 @Composable
-private fun ChatItem(message: Message) {
-    val sdf = remember { SimpleDateFormat("MM/dd", Locale.getDefault()) }
+private fun ChatItem(
+    chat: TeamChatThreadUi,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -172,7 +182,7 @@ private fun ChatItem(message: Message) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = message.senderName.first().uppercase(),
+                text = chat.avatarText,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -184,20 +194,20 @@ private fun ChatItem(message: Message) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = message.senderName,
+                    text = chat.title,
                     fontWeight = FontWeight.Medium,
                     fontSize = 15.sp,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = sdf.format(Date(message.timestamp)),
+                    text = chat.dateLabel,
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = message.content,
+                text = chat.preview,
                 fontSize = 13.sp,
                 color = Color.Gray,
                 maxLines = 1,

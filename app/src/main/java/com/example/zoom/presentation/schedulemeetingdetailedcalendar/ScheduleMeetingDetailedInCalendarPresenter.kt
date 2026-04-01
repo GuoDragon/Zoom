@@ -61,7 +61,7 @@ class ScheduleMeetingDetailedInCalendarPresenter(
             "Invitees: ${inviteeNames.joinToString(", ")}"
         }
         return if (signal != null) {
-            "Repeat: ${signal.repeat}. Calendar: ${signal.calendar}. Encryption: ${signal.encryption}. $inviteeText."
+            "Meeting ID: ${signal.meetingNumber}. Repeat: ${signal.repeat}. Calendar: ${signal.calendar}. Encryption: ${signal.encryption}. Waiting room: ${if (signal.waitingRoomEnabled) "On" else "Off"}. $inviteeText."
         } else {
             "Topic: $meetingTitle. $inviteeText."
         }

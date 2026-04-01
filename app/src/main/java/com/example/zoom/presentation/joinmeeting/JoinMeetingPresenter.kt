@@ -24,15 +24,20 @@ class JoinMeetingPresenter(
         }
     }
 
-    override fun recordJoinByMeetingNumber(meetingNumber: String) {
+    override fun prepareJoinByMeetingNumber(meetingNumber: String): String {
         DataRepository.recordJoinHistoryUsed(
             meetingNumber = meetingNumber,
-            title = "${DataRepository.getCurrentUser().username}'s Zoom Meeting"
+            title = "Zoom Meeting $meetingNumber"
         )
+        return DataRepository.prepareJoinMeetingSession(meetingNumber = meetingNumber)
     }
 
-    override fun recordJoinByHistoryItem(item: JoinMeetingHistoryItem) {
+    override fun prepareJoinByHistoryItem(item: JoinMeetingHistoryItem): String {
         DataRepository.recordJoinHistoryUsed(
+            meetingNumber = item.meetingNumber,
+            title = item.title
+        )
+        return DataRepository.prepareJoinMeetingSession(
             meetingNumber = item.meetingNumber,
             title = item.title
         )

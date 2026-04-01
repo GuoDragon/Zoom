@@ -53,6 +53,8 @@ fun MeetingSafeDrivingModeScreen(
     showAudioMenu: Boolean,
     onSpeakerClick: () -> Unit,
     onAudioOptionSelected: (MeetingAudioOption) -> Unit,
+    speechHint: String?,
+    onSpeakHello: () -> Unit,
     onEndClick: () -> Unit,
     onSwipeBack: () -> Unit
 ) {
@@ -153,8 +155,19 @@ fun MeetingSafeDrivingModeScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             SafeDrivingSpeakButton(
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                onSpeak = onSpeakHello
             )
+
+            if (!speechHint.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = speechHint,
+                    color = Color(0xFFE2A330),
+                    fontSize = 16.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -183,7 +196,8 @@ fun MeetingSafeDrivingModeScreen(
 
 @Composable
 private fun SafeDrivingSpeakButton(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSpeak: () -> Unit
 ) {
     var pulseNonce by remember { mutableIntStateOf(0) }
     var pulseActive by remember { mutableStateOf(false) }
@@ -237,7 +251,10 @@ private fun SafeDrivingSpeakButton(
                 }
                 .clip(CircleShape)
                 .background(Color.Transparent)
-                .clickable { pulseNonce += 1 },
+                .clickable {
+                    pulseNonce += 1
+                    onSpeak()
+                },
             contentAlignment = Alignment.Center
         ) {
             Box(

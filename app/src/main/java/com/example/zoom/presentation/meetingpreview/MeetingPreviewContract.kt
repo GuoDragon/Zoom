@@ -1,12 +1,14 @@
 package com.example.zoom.presentation.meetingpreview
 
+import com.example.zoom.ui.components.MeetingSessionConfig
+
 interface MeetingPreviewContract {
     interface View {
         fun showContent(content: MeetingPreviewUiState)
     }
 
     interface Presenter {
-        fun loadData(meetingId: String?)
+        fun loadData(meetingId: String?, initialConfig: MeetingSessionConfig)
     }
 }
 

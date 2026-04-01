@@ -252,6 +252,7 @@ fun ScheduleAddInviteesPage(
     selectedUserIds: Set<String>,
     onQueryChange: (String) -> Unit,
     onToggleUser: (String) -> Unit,
+    onSelectAll: () -> Unit,
     onCancel: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -283,6 +284,21 @@ fun ScheduleAddInviteesPage(
                 .background(Color.White)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = "Select all",
+                        color = ZoomBlue,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable(onClick = onSelectAll)
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

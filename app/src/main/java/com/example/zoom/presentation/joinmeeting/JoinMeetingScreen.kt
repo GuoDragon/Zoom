@@ -41,6 +41,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.R
+import com.example.zoom.ui.components.MeetingAudioOption
+import com.example.zoom.ui.components.MeetingSessionConfig
 import com.example.zoom.ui.components.ZoomActionPageTopBar
 import com.example.zoom.ui.components.ZoomInsetDivider
 import com.example.zoom.ui.components.ZoomPageSurface
@@ -53,7 +55,7 @@ import com.example.zoom.ui.theme.ZoomTextSecondary
 @Composable
 fun JoinMeetingScreen(
     onBackClick: () -> Unit,
-    onJoinMeetingClick: () -> Unit
+    onJoinMeetingClick: (String, MeetingSessionConfig) -> Unit
 ) {
     var uiState by remember { mutableStateOf<JoinMeetingUiState?>(null) }
 
@@ -131,9 +133,20 @@ fun JoinMeetingScreen(
                     ZoomPrimaryActionButton(
                         text = stringResource(R.string.join_meeting_action_join),
                         onClick = {
-                            presenter.recordJoinByMeetingNumber(meetingNumber = meetingId)
+                            val preparedMeetingId = presenter.prepareJoinByMeetingNumber(meetingNumber = meetingId)
                             historyItems = presenter.refreshHistory()
-                            onJoinMeetingClick()
+                            onJoinMeetingClick(
+                                preparedMeetingId,
+                                MeetingSessionConfig(
+                                    microphoneOn = !audioOff,
+                                    cameraOn = !videoOff,
+                                    audioOption = if (audioOff) {
+                                        MeetingAudioOption.NoAudio
+                                    } else {
+                                        MeetingAudioOption.WifiOrCellular
+                                    }
+                                )
+                            )
                         },
                         enabled = isMeetingIdValid,
                         modifier = Modifier.padding(horizontal = 16.dp)
@@ -176,9 +189,21 @@ fun JoinMeetingScreen(
                     items = historyItems,
                     onItemClick = { item ->
                         meetingId = item.meetingNumber
-                        presenter.recordJoinByHistoryItem(item)
+                        val preparedMeetingId = presenter.prepareJoinByHistoryItem(item)
                         historyItems = presenter.refreshHistory()
                         showHistorySheet = false
+                        onJoinMeetingClick(
+                            preparedMeetingId,
+                            MeetingSessionConfig(
+                                microphoneOn = !audioOff,
+                                cameraOn = !videoOff,
+                                audioOption = if (audioOff) {
+                                    MeetingAudioOption.NoAudio
+                                } else {
+                                    MeetingAudioOption.WifiOrCellular
+                                }
+                            )
+                        )
                     },
                     onClearHistory = {
                         presenter.clearHistory()

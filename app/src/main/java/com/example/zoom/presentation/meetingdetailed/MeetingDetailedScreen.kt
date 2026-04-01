@@ -55,6 +55,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.common.constants.MeetingActionTypes
+import com.example.zoom.data.DataRepository
 import com.example.zoom.presentation.meetingchatdetailed.MeetingChatDetailedOverlay
 import com.example.zoom.presentation.meetinginfodetailed.MeetingInfoOverlay
 import com.example.zoom.presentation.meetingmorepages.MeetingAppsScreen
@@ -103,11 +105,13 @@ fun MeetingDetailedScreen(
     var isHandRaised by remember { mutableStateOf(false) }
     var nextEmojiReactionId by remember { mutableIntStateOf(0) }
     var activeEmojiReaction by remember { mutableStateOf<MeetingEmojiReaction?>(null) }
+    var safeDrivingSpeechHint by remember { mutableStateOf<String?>(null) }
 
     val view = remember {
         object : MeetingDetailedContract.View {
             override fun showContent(content: MeetingDetailedUiState) {
                 uiState = content
+                safeDrivingSpeechHint = null
             }
         }
     }
@@ -117,6 +121,7 @@ fun MeetingDetailedScreen(
     }
 
     uiState?.let { screenState ->
+        val meetingId = DataRepository.getCurrentMeeting().meetingId
         var microphoneOn by remember(initialConfig) { mutableStateOf(initialConfig.microphoneOn) }
         var cameraOn by remember(initialConfig) { mutableStateOf(initialConfig.cameraOn) }
         var selectedAudioOption by remember(initialConfig) { mutableStateOf(initialConfig.audioOption) }
@@ -167,6 +172,15 @@ fun MeetingDetailedScreen(
                             selectedAudioOption = option
                             showAudioMenu = false
                         },
+                        speechHint = safeDrivingSpeechHint,
+                        onSpeakHello = {
+                            safeDrivingSpeechHint = "Last voice input: Hello"
+                            DataRepository.recordMeetingAction(
+                                actionType = MeetingActionTypes.SAFE_DRIVING_VOICE_NOTE,
+                                meetingId = meetingId,
+                                note = "Hello"
+                            )
+                        },
                         onEndClick = onEndClick,
                         onSwipeBack = { pageMode = MeetingPageMode.MAIN }
                     )
@@ -183,11 +197,23 @@ fun MeetingDetailedScreen(
 
             if (showMoreOverlay) {
                 MeetingMoreDetailedOverlay(
-                    onRaiseHand = { isHandRaised = true; showMoreOverlay = false },
+                    onRaiseHand = {
+                        isHandRaised = true
+                        DataRepository.recordMeetingAction(
+                            actionType = MeetingActionTypes.RAISE_HAND,
+                            meetingId = meetingId
+                        )
+                        showMoreOverlay = false
+                    },
                     onEmojiSelected = { emoji ->
                         nextEmojiReactionId += 1
                         activeEmojiReaction = MeetingEmojiReaction(
                             id = nextEmojiReactionId,
+                            emoji = emoji
+                        )
+                        DataRepository.recordMeetingAction(
+                            actionType = MeetingActionTypes.EMOJI_REACTION,
+                            meetingId = meetingId,
                             emoji = emoji
                         )
                         showMoreOverlay = false
@@ -237,7 +263,10 @@ fun MeetingDetailedScreen(
 
             when (activeMeetingMorePage) {
                 MeetingMorePage.SHARE -> MeetingShareOverlay(
-                    onDismiss = { activeMeetingMorePage = null }
+                    onDismiss = { activeMeetingMorePage = null },
+                    onShareScreenChanged = { enabled ->
+                        DataRepository.setCurrentMeetingScreenShareEnabled(enabled)
+                    }
                 )
                 MeetingMorePage.NOTES -> MeetingNotesScreen(
                     onClose = { activeMeetingMorePage = null }
@@ -284,7 +313,13 @@ fun MeetingDetailedScreen(
                         .padding(bottom = 80.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color(0xFF2A2A2D))
-                        .clickable { isHandRaised = false }
+                        .clickable {
+                            isHandRaised = false
+                            DataRepository.recordMeetingAction(
+                                actionType = MeetingActionTypes.LOWER_HAND,
+                                meetingId = meetingId
+                            )
+                        }
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     Text(

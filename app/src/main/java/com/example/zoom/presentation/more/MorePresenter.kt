@@ -17,14 +17,14 @@ class MorePresenter(
         view.showContent(
             MoreUiState(
                 shortcutActions = listOf(
-                    MoreShortcutUiState("Whiteboards", Icons.Default.Draw),
-                    MoreShortcutUiState("Events", Icons.AutoMirrored.Filled.EventNote),
-                    MoreShortcutUiState("Apps", Icons.Default.GridView),
-                    MoreShortcutUiState("Contacts", Icons.Default.PermContactCalendar),
-                    MoreShortcutUiState("Clips", Icons.Default.PlayCircleOutline),
-                    MoreShortcutUiState("Notes", Icons.Default.Description),
-                    MoreShortcutUiState("Tasks", Icons.Default.TaskAlt),
-                    MoreShortcutUiState("Scheduler", Icons.Default.Groups)
+                    MoreShortcutUiState(MoreShortcutAction.WHITEBOARDS, "Whiteboards", Icons.Default.Draw),
+                    MoreShortcutUiState(MoreShortcutAction.EVENTS, "Events", Icons.AutoMirrored.Filled.EventNote),
+                    MoreShortcutUiState(MoreShortcutAction.APPS, "Apps", Icons.Default.GridView),
+                    MoreShortcutUiState(MoreShortcutAction.CONTACTS, "Contacts", Icons.Default.PermContactCalendar),
+                    MoreShortcutUiState(MoreShortcutAction.CLIPS, "Clips", Icons.Default.PlayCircleOutline),
+                    MoreShortcutUiState(MoreShortcutAction.NOTES, "Notes", Icons.Default.Description),
+                    MoreShortcutUiState(MoreShortcutAction.TASKS, "Tasks", Icons.Default.TaskAlt),
+                    MoreShortcutUiState(MoreShortcutAction.SCHEDULER, "Scheduler", Icons.Default.Groups)
                 ),
                 promoBadge = "FREE TRIAL OFFER",
                 promoText = "Unlock longer meetings and AI Companion with a Workplace Pro trial for up to 14 days.",

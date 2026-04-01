@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.common.constants.MeetingActionTypes
+import com.example.zoom.data.DataRepository
 
 @Composable
 fun MeetingInfoOverlay(onDismiss: () -> Unit) {
@@ -92,7 +94,14 @@ fun MeetingInfoPage(
                     .fillMaxWidth()
                     .fillMaxHeight(0.62f),
                 onDismiss = onDismiss,
-                onCopyMeetingLink = { copyToClipboard(context, state.inviteLink) },
+                onCopyMeetingLink = {
+                    copyToClipboard(context, state.inviteLink)
+                    DataRepository.recordMeetingAction(
+                        actionType = MeetingActionTypes.COPY_INVITE_LINK,
+                        meetingId = DataRepository.getCurrentMeeting().meetingId,
+                        note = state.inviteLink
+                    )
+                },
                 onShare = { shareMeetingInfo(context, buildMeetingShareText(state)) }
             )
         }

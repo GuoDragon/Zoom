@@ -4,6 +4,13 @@ import com.example.zoom.data.DataRepository
 
 class ProfilePresenter(private val view: ProfileContract.View) : ProfileContract.Presenter {
     override fun loadData() {
-        view.showUser(DataRepository.getCurrentUser())
+        val profileSignal = DataRepository.getUserProfileSignal()
+        view.showUser(
+            ProfileUiState(
+                user = DataRepository.getCurrentUser(),
+                availability = profileSignal.availability,
+                statusText = profileSignal.statusText
+            )
+        )
     }
 }

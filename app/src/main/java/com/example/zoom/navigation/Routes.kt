@@ -20,10 +20,22 @@ sealed class Screen(val route: String) {
     object HostMeeting : Screen("host_meeting")
     object MeetingPreview : Screen("meeting_preview") {
         const val meetingIdArg = "meetingId"
-        val routePattern = "$route?$meetingIdArg={$meetingIdArg}"
+        const val microphoneArg = "microphoneOn"
+        const val cameraArg = "cameraOn"
+        const val audioArg = "audioOption"
+        val routePattern =
+            "$route?$meetingIdArg={$meetingIdArg}&$microphoneArg={$microphoneArg}&$cameraArg={$cameraArg}&$audioArg={$audioArg}"
 
-        fun createRoute(meetingId: String? = null): String {
-            return if (meetingId.isNullOrBlank()) route else "$route?$meetingIdArg=$meetingId"
+        fun createRoute(
+            meetingId: String? = null,
+            config: MeetingSessionConfig = MeetingSessionConfig(
+                microphoneOn = false,
+                cameraOn = false,
+                audioOption = com.example.zoom.ui.components.MeetingAudioOption.WifiOrCellular
+            )
+        ): String {
+            val resolvedMeetingId = meetingId ?: ""
+            return "$route?$meetingIdArg=$resolvedMeetingId&$microphoneArg=${config.microphoneOn}&$cameraArg=${config.cameraOn}&$audioArg=${config.audioOption.routeValue}"
         }
     }
     object LeaveMeeting : Screen("leave_meeting")
@@ -74,4 +86,15 @@ sealed class Screen(val route: String) {
             return "$route/$meetingId"
         }
     }
+    object Contacts : Screen("contacts")
+    object DirectChat : Screen("direct_chat") {
+        const val userIdArg = "userId"
+        val routePattern = "$route/{$userIdArg}"
+
+        fun createRoute(userId: String): String {
+            return "$route/$userId"
+        }
+    }
+    object ProfileAvailability : Screen("profile_availability")
+    object ProfileDisplayName : Screen("profile_display_name")
 }

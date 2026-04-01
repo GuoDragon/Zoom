@@ -34,7 +34,10 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 @Composable
-fun MeetingShareOverlay(onDismiss: () -> Unit) {
+fun MeetingShareOverlay(
+    onDismiss: () -> Unit,
+    onShareScreenChanged: (Boolean) -> Unit
+) {
     val state = rememberMeetingMorePagesUiState()
     var selectedLabel by remember { mutableStateOf<String?>(null) }
     var shareScreenEnabled by remember { mutableStateOf(false) }
@@ -52,6 +55,7 @@ fun MeetingShareOverlay(onDismiss: () -> Unit) {
                 .clickable {
                     shareScreenEnabled = !shareScreenEnabled
                     selectedLabel = null
+                    onShareScreenChanged(shareScreenEnabled)
                 }
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.Center,

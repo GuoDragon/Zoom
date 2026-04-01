@@ -9,7 +9,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.zoom.data.DataRepository
 import com.example.zoom.presentation.calendar.CalendarScreen
+import com.example.zoom.presentation.contacts.ContactsScreen
 import com.example.zoom.presentation.detailedinfo.DetailedInfoScreen
+import com.example.zoom.presentation.directchat.DirectChatScreen
 import com.example.zoom.presentation.documents.DocumentsScreen
 import com.example.zoom.presentation.home.HomeScreen
 import com.example.zoom.presentation.hostmeeting.HostMeetingScreen
@@ -21,6 +23,8 @@ import com.example.zoom.presentation.meetingdetailed.MeetingDetailedScreen
 import com.example.zoom.presentation.meetinginfodetailed.MeetingInfoDetailedScreen
 import com.example.zoom.presentation.meetingpreview.MeetingPreviewScreen
 import com.example.zoom.presentation.profile.ProfileScreen
+import com.example.zoom.presentation.profileavailability.ProfileAvailabilityScreen
+import com.example.zoom.presentation.profiledisplayname.ProfileDisplayNameScreen
 import com.example.zoom.presentation.schedulemeetingchat.ScheduleMeetingChatScreen
 import com.example.zoom.presentation.schedulemeeting.ScheduleMeetingScreen
 import com.example.zoom.presentation.schedulemeetingdetailed.ScheduleMeetingDetailedScreen
@@ -58,7 +62,11 @@ fun ZoomNavGraph(
         composable(Screen.TeamChat.route) {
             TeamChatScreen(
                 onAvatarClick = onAvatarClick,
-                onSearchClick = { navController.navigate(Screen.Search.route) }
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onContactsClick = { navController.navigate(Screen.Contacts.route) },
+                onDirectChatClick = { userId ->
+                    navController.navigate(Screen.DirectChat.createRoute(userId))
+                }
             )
         }
         composable(Screen.Documents.route) {
@@ -88,7 +96,9 @@ fun ZoomNavGraph(
         composable(Screen.HostMeeting.route) {
             HostMeetingScreen(
                 onBackClick = { navController.popBackStack() },
-                onStartMeetingClick = { navController.navigate(Screen.MeetingPreview.createRoute()) }
+                onStartMeetingClick = { meetingId, config ->
+                    navController.navigate(Screen.MeetingPreview.createRoute(meetingId, config))
+                }
             )
         }
         composable(
@@ -98,14 +108,34 @@ fun ZoomNavGraph(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = ""
+                },
+                navArgument(Screen.MeetingPreview.microphoneArg) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(Screen.MeetingPreview.cameraArg) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(Screen.MeetingPreview.audioArg) {
+                    type = NavType.StringType
+                    defaultValue = MeetingAudioOption.WifiOrCellular.routeValue
                 }
             )
         ) { backStackEntry ->
             val meetingId = backStackEntry.arguments
                 ?.getString(Screen.MeetingPreview.meetingIdArg)
                 ?.takeIf { it.isNotBlank() }
+            val previewConfig = MeetingSessionConfig(
+                microphoneOn = backStackEntry.arguments?.getBoolean(Screen.MeetingPreview.microphoneArg) ?: false,
+                cameraOn = backStackEntry.arguments?.getBoolean(Screen.MeetingPreview.cameraArg) ?: false,
+                audioOption = MeetingAudioOption.fromRouteValue(
+                    backStackEntry.arguments?.getString(Screen.MeetingPreview.audioArg)
+                )
+            )
             MeetingPreviewScreen(
                 meetingId = meetingId,
+                initialConfig = previewConfig,
                 onLeaveClick = { navController.navigate(Screen.LeaveMeeting.route) },
                 onStartClick = { config ->
                     navController.navigate(Screen.MeetingDetailed.createRoute(config))
@@ -188,7 +218,9 @@ fun ZoomNavGraph(
         composable(Screen.JoinMeeting.route) {
             JoinMeetingScreen(
                 onBackClick = { navController.popBackStack() },
-                onJoinMeetingClick = { navController.navigate(Screen.MeetingPreview.createRoute()) }
+                onJoinMeetingClick = { meetingId, config ->
+                    navController.navigate(Screen.MeetingPreview.createRoute(meetingId, config))
+                }
             )
         }
         composable(
@@ -240,11 +272,21 @@ fun ZoomNavGraph(
                     navController.navigate(Screen.ScheduleMeeting.createRoute(selectedMeetingId))
                 },
                 onStartClick = { selectedMeetingId ->
-                    navController.navigate(Screen.MeetingPreview.createRoute(selectedMeetingId))
+                    navController.navigate(
+                        Screen.MeetingPreview.createRoute(
+                            selectedMeetingId,
+                            MeetingSessionConfig(
+                                microphoneOn = false,
+                                cameraOn = false,
+                                audioOption = MeetingAudioOption.WifiOrCellular
+                            )
+                        )
+                    )
                 },
                 onChatClick = { selectedMeetingId ->
                     navController.navigate(Screen.ScheduleMeetingChat.createRoute(selectedMeetingId))
-                }
+                },
+                onMeetingCancelled = { navController.popBackStack() }
             )
         }
         composable(
@@ -262,7 +304,16 @@ fun ZoomNavGraph(
                 meetingId = meetingId,
                 onBackClick = { navController.popBackStack() },
                 onStartClick = { selectedMeetingId ->
-                    navController.navigate(Screen.MeetingPreview.createRoute(selectedMeetingId))
+                    navController.navigate(
+                        Screen.MeetingPreview.createRoute(
+                            selectedMeetingId,
+                            MeetingSessionConfig(
+                                microphoneOn = false,
+                                cameraOn = false,
+                                audioOption = MeetingAudioOption.WifiOrCellular
+                            )
+                        )
+                    )
                 }
             )
         }
@@ -286,17 +337,49 @@ fun ZoomNavGraph(
             ProfileScreen(
                 onBackClick = { navController.popBackStack() },
                 onDetailedInfoClick = { navController.navigate(Screen.DetailedInfo.route) },
-                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+                onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                onAvailabilityClick = { navController.navigate(Screen.ProfileAvailability.route) }
             )
         }
         composable(Screen.DetailedInfo.route) {
-            DetailedInfoScreen(onBackClick = { navController.popBackStack() })
+            DetailedInfoScreen(
+                onBackClick = { navController.popBackStack() },
+                onDisplayNameClick = { navController.navigate(Screen.ProfileDisplayName.route) }
+            )
         }
         composable(Screen.Settings.route) {
             SettingsScreen(onBackClick = { navController.popBackStack() })
         }
         composable(Screen.MeetingInfoDetailed.route) {
             MeetingInfoDetailedScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(Screen.Contacts.route) {
+            ContactsScreen(
+                onBackClick = { navController.popBackStack() },
+                onContactClick = { userId ->
+                    navController.navigate(Screen.DirectChat.createRoute(userId))
+                }
+            )
+        }
+        composable(
+            route = Screen.DirectChat.routePattern,
+            arguments = listOf(
+                navArgument(Screen.DirectChat.userIdArg) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString(Screen.DirectChat.userIdArg) ?: return@composable
+            DirectChatScreen(
+                userId = userId,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.ProfileAvailability.route) {
+            ProfileAvailabilityScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(Screen.ProfileDisplayName.route) {
+            ProfileDisplayNameScreen(onBackClick = { navController.popBackStack() })
         }
     }
 }

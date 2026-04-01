@@ -10,16 +10,19 @@ interface ScheduleMeetingDetailedContract {
     interface Presenter {
         fun loadData(meetingId: String)
         fun updateInvitees(meetingId: String, inviteeUserIds: Set<String>)
+        fun cancelMeeting(meetingId: String): Boolean
     }
 }
 
 data class ScheduleMeetingDetailedUiState(
     val meetingId: String,
     val meetingTitle: String,
+    val meetingNumberLabel: String,
     val startsLabel: String,
     val durationLabel: String,
     val canEdit: Boolean,
     val inviteeSummary: String,
+    val waitingRoomLabel: String,
     val selectedInviteeUserIds: Set<String>,
     val inviteeOptions: List<ScheduleMeetingInviteeOption>,
     val inviteMessageText: String,

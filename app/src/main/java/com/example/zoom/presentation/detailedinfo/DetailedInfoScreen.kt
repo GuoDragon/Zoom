@@ -18,6 +18,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.components.ProfileCard
 import com.example.zoom.ui.components.ProfileCardDivider
 import com.example.zoom.ui.components.ProfileIdentityHeader
@@ -36,7 +38,10 @@ import com.example.zoom.ui.components.ZoomTopBarInsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailedInfoScreen(onBackClick: () -> Unit) {
+fun DetailedInfoScreen(
+    onBackClick: () -> Unit,
+    onDisplayNameClick: () -> Unit
+) {
     var uiState by remember { mutableStateOf<DetailedInfoUiState?>(null) }
 
     val view = remember {
@@ -47,7 +52,9 @@ fun DetailedInfoScreen(onBackClick: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) {
+    val runtimeVersion by DataRepository.observeMeetingDataVersion().collectAsState()
+
+    LaunchedEffect(runtimeVersion) {
         DetailedInfoPresenter(view).loadData()
     }
 
@@ -94,7 +101,8 @@ fun DetailedInfoScreen(onBackClick: () -> Unit) {
                                     title = row.title,
                                     trailingText = row.value,
                                     trailingIcon = trailingIcon,
-                                    showChevron = row.showChevron
+                                    showChevron = row.showChevron,
+                                    onClick = if (row.title == "Display name") onDisplayNameClick else null
                                 )
                                 if (index != section.rows.lastIndex) {
                                     ProfileCardDivider()

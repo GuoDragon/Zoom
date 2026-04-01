@@ -62,17 +62,19 @@ class ScheduleMeetingDetailedPresenter(
         val inviteMessageText = buildMeetingInviteMessageText(
             hostName = currentUser.username,
             meetingTopic = meeting.topic,
-            meetingId = meeting.meetingId
+            meetingId = DataRepository.getMeetingNumber(meeting.meetingId)
         )
 
         view.showContent(
             ScheduleMeetingDetailedUiState(
                 meetingId = meetingId,
                 meetingTitle = meeting.topic,
+                meetingNumberLabel = DataRepository.getMeetingNumber(meeting.meetingId),
                 startsLabel = startLabel,
                 durationLabel = formatDurationLabel(durationMinutes),
                 canEdit = signal != null,
                 inviteeSummary = inviteeSummary,
+                waitingRoomLabel = if (signal?.waitingRoomEnabled == true) "On" else "Off",
                 selectedInviteeUserIds = selectedInvitees,
                 inviteeOptions = inviteeOptions,
                 inviteMessageText = inviteMessageText,
@@ -87,5 +89,9 @@ class ScheduleMeetingDetailedPresenter(
             inviteeUserIds = inviteeUserIds.toList()
         )
         loadData(meetingId)
+    }
+
+    override fun cancelMeeting(meetingId: String): Boolean {
+        return DataRepository.cancelScheduledMeeting(meetingId)
     }
 }

@@ -61,6 +61,7 @@ fun HomeScreen(
 ) {
     val upcomingMeetings = remember { mutableStateListOf<HomeMeetingCardUi>() }
     var avatarInitial by remember { mutableStateOf("?") }
+    var upcomingCount by remember { mutableStateOf(0) }
     var showShareOverlay by remember { mutableStateOf(false) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     val expansionMenuItems = listOf(
@@ -75,6 +76,7 @@ fun HomeScreen(
                 avatarInitial = state.currentUser.username.firstOrNull()?.uppercase() ?: "?"
                 upcomingMeetings.clear()
                 upcomingMeetings.addAll(state.upcomingMeetings)
+                upcomingCount = state.upcomingCount
             }
         }
     }
@@ -164,7 +166,7 @@ fun HomeScreen(
                 } else {
                     item {
                         Text(
-                            stringResource(R.string.home_upcoming_meetings_title),
+                            "${stringResource(R.string.home_upcoming_meetings_title)} ($upcomingCount)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )

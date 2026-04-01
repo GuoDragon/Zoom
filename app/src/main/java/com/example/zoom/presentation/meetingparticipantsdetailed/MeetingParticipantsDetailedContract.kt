@@ -54,5 +54,6 @@ interface MeetingParticipantsDetailedContract {
             meetingId: String,
             selectedContactIds: Set<String>
         )
+        fun copyInviteLink(meetingId: String): String
     }
 }

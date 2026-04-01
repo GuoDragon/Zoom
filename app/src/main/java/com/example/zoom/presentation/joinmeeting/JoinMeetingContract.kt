@@ -8,8 +8,8 @@ interface JoinMeetingContract {
     interface Presenter {
         fun loadData()
         fun refreshHistory(): List<JoinMeetingHistoryItem>
-        fun recordJoinByMeetingNumber(meetingNumber: String)
-        fun recordJoinByHistoryItem(item: JoinMeetingHistoryItem)
+        fun prepareJoinByMeetingNumber(meetingNumber: String): String
+        fun prepareJoinByHistoryItem(item: JoinMeetingHistoryItem): String
         fun clearHistory()
     }
 }
