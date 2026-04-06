@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.data.DataRepository
 import com.example.zoom.ui.components.MeetingAudioMenu
 import com.example.zoom.ui.components.MeetingAudioOption
 import com.example.zoom.ui.components.MeetingMediaToggleButton
@@ -188,6 +189,11 @@ fun MeetingPreviewScreen(
                 ZoomPrimaryActionButton(
                     text = "Start",
                     onClick = {
+                        DataRepository.recordCurrentMeetingStarted(
+                            microphoneOn = microphoneOn,
+                            cameraOn = cameraOn,
+                            audioOption = selectedAudioOption.routeValue
+                        )
                         onStartClick(
                             MeetingSessionConfig(
                                 microphoneOn = microphoneOn,

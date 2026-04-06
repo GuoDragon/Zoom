@@ -49,7 +49,8 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun MeetingMoreDetailedOverlay(
-    onRaiseHand: () -> Unit,
+    isHandRaised: Boolean,
+    onHandToggle: () -> Unit,
     onEmojiSelected: (String) -> Unit,
     onParticipantsClick: () -> Unit = {},
     onShareClick: () -> Unit = {},
@@ -89,14 +90,16 @@ fun MeetingMoreDetailedOverlay(
             if (showReactionsPage) {
                 ReactionsPage(
                     state = state,
-                    onRaiseHand = onRaiseHand,
+                    isHandRaised = isHandRaised,
+                    onHandToggle = onHandToggle,
                     onEmojiSelected = onEmojiSelected,
                     onClose = { showReactionsPage = false }
                 )
             } else {
                 PrimaryMorePage(
                     state = state,
-                    onRaiseHand = onRaiseHand,
+                    isHandRaised = isHandRaised,
+                    onHandToggle = onHandToggle,
                     onEmojiSelected = onEmojiSelected,
                     onMoreEmojisClick = { showReactionsPage = true },
                     onDismiss = onDismiss,
@@ -121,7 +124,8 @@ fun MeetingMoreDetailedOverlay(
 @Composable
 private fun PrimaryMorePage(
     state: MeetingMoreDetailedUiState,
-    onRaiseHand: () -> Unit,
+    isHandRaised: Boolean,
+    onHandToggle: () -> Unit,
     onEmojiSelected: (String) -> Unit,
     onMoreEmojisClick: () -> Unit,
     onDismiss: () -> Unit,
@@ -150,8 +154,9 @@ private fun PrimaryMorePage(
 
             // Quick emoji row
             QuickEmojiRow(
+                isHandRaised = isHandRaised,
                 emojis = state.quickEmojis,
-                onRaiseHand = onRaiseHand,
+                onHandToggle = onHandToggle,
                 onEmojiSelected = onEmojiSelected,
                 onMoreClick = onMoreEmojisClick
             )
@@ -174,7 +179,8 @@ private fun PrimaryMorePage(
 @Composable
 private fun ReactionsPage(
     state: MeetingMoreDetailedUiState,
-    onRaiseHand: () -> Unit,
+    isHandRaised: Boolean,
+    onHandToggle: () -> Unit,
     onEmojiSelected: (String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -229,7 +235,8 @@ private fun ReactionsPage(
 
             // Raise hand button
             RaiseHandButton(
-                onRaiseHand = onRaiseHand
+                isHandRaised = isHandRaised,
+                onHandToggle = onHandToggle
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -290,8 +297,9 @@ private fun DragHandle() {
 
 @Composable
 private fun QuickEmojiRow(
+    isHandRaised: Boolean,
     emojis: List<String>,
-    onRaiseHand: () -> Unit,
+    onHandToggle: () -> Unit,
     onEmojiSelected: (String) -> Unit,
     onMoreClick: () -> Unit
 ) {
@@ -302,28 +310,21 @@ private fun QuickEmojiRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Raise Hand capsule button
         Box(
             modifier = Modifier
                 .height(48.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFFF0F0F0))
-                .clickable { onRaiseHand() }
+                .clickable(onClick = onHandToggle)
                 .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(text = "🖐", fontSize = 22.sp)
-                Text(
-                    text = "Raise Hand",
-                    color = Color(0xFF333333),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            Text(
+                text = if (isHandRaised) "Lower hand" else "Raise hand",
+                color = Color(0xFF333333),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         emojis.forEach { emoji ->
@@ -336,7 +337,6 @@ private fun QuickEmojiRow(
             )
         }
 
-        // "..." button
         Box(
             modifier = Modifier
                 .size(48.dp)
@@ -455,7 +455,8 @@ private fun CancelButton(onDismiss: () -> Unit) {
 
 @Composable
 private fun RaiseHandButton(
-    onRaiseHand: () -> Unit
+    isHandRaised: Boolean,
+    onHandToggle: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -463,12 +464,12 @@ private fun RaiseHandButton(
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF3A3A3D))
-            .clickable { onRaiseHand() }
+            .clickable(onClick = onHandToggle)
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "🖐  Raise hand",
+            text = if (isHandRaised) "Lower hand" else "Raise hand",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium

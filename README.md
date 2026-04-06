@@ -2,6 +2,19 @@
 
 This project is a static Zoom-like Android app built with Jetpack Compose and MVP-style presentation layers.
 
+## Latest Update (2026-04-01 Automation Seed Scheduled Meetings)
+
+Added cold-start automation seed meetings so AppSim detection tasks can rely on stable upcoming schedule records after each app data reset:
+
+1. `DataRepository.resetRuntimeSignalData()` now preloads 3 runtime scheduled meetings on every fresh app start:
+   - tomorrow 08:00
+   - tomorrow 12:00
+   - the next upcoming May 1 meeting
+2. These seeds are stored in `runtime_scheduled_meetings.json` immediately after reset, alongside the existing runtime reset policy.
+3. Seed meetings keep normal Zoom schedule fields (`calendar`, `encryption`, `waitingRoomEnabled`, `inviteeUserIds`) so later schedule-edit automation can modify them directly.
+4. Build verification:
+   - Re-ran `./gradlew.bat :app:compileDebugKotlin` and confirmed success.
+
 ## Latest Update (2026-04-01 More Page Contacts Entry Alignment)
 
 Aligned the newly added page-tree `Contacts Page` under `More Page` with the existing contacts/direct-message flow:

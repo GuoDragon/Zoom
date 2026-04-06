@@ -1,6 +1,7 @@
 package com.example.zoom.data
 
 import android.content.Context
+import android.util.Log
 import com.example.zoom.common.constants.JoinHistoryActionTypes
 import com.example.zoom.common.constants.MeetingActionTypes
 import com.example.zoom.common.constants.RuntimeSignalFileNames
@@ -13,6 +14,7 @@ import com.example.zoom.model.JoinMeetingHistorySignal
 import com.example.zoom.model.Meeting
 import com.example.zoom.model.MeetingActionSignal
 import com.example.zoom.model.Message
+import com.example.zoom.model.RuntimeSignalMeta
 import com.example.zoom.model.ScheduledMeetingSignal
 import com.example.zoom.model.User
 import com.example.zoom.model.UserProfileSignal
@@ -22,12 +24,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 object DataRepository {
+    private const val TAG = "DataRepository"
     private const val CURRENT_USER_ID = "user001"
     private const val DEFAULT_CURRENT_MEETING_ID = "mtg016"
     private const val PERSONAL_MEETING_NUMBER = "9948881080"
     private const val DEFAULT_MEETING_PASSCODE = "qwjU5X"
+    private const val AUTOMATION_TIME_ZONE_ID = "Asia/Shanghai"
+    private const val RUNTIME_SCHEMA_VERSION = 1
+    private const val AUTOMATION_SEED_MEETING_COUNT = 3
 
     private data class ActiveScreenShareSession(
         val meetingId: String,
@@ -112,7 +122,8 @@ object DataRepository {
         RuntimeSignalFileNames.RUNTIME_DIRECT_MESSAGES to runtimeDirectMessageFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY to runtimeJoinHistoryFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS to runtimeMeetingActionFile().absolutePath,
-        RuntimeSignalFileNames.RUNTIME_PROFILE_STATE to runtimeProfileStateFile().absolutePath
+        RuntimeSignalFileNames.RUNTIME_PROFILE_STATE to runtimeProfileStateFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_META to runtimeMetaFile().absolutePath
     )
 
     fun getScheduledMeetingSignalFilePath(): String = runtimeScheduledMeetingFile().absolutePath
@@ -529,12 +540,61 @@ object DataRepository {
         bumpRuntimeDataVersion()
     }
 
+    fun recordCurrentMeetingStarted(
+        microphoneOn: Boolean,
+        cameraOn: Boolean,
+        audioOption: String
+    ): MeetingActionSignal {
+        val meetingId = getCurrentMeeting().meetingId
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.MEETING_STARTED,
+            meetingId = meetingId,
+            note = buildMeetingLifecycleNote(meetingId),
+            microphoneOn = microphoneOn,
+            cameraOn = cameraOn,
+            audioOption = audioOption
+        )
+    }
+
+    fun recordCurrentMeetingExited(exitAction: String): MeetingActionSignal {
+        val meetingId = getCurrentMeeting().meetingId
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.MEETING_EXITED,
+            meetingId = meetingId,
+            note = buildMeetingLifecycleNote(meetingId),
+            exitAction = exitAction
+        )
+    }
+
+    fun recordCurrentMeetingMediaStateChanged(
+        microphoneOn: Boolean,
+        cameraOn: Boolean,
+        audioOption: String,
+        mediaChangeSource: String
+    ): MeetingActionSignal {
+        val meetingId = getCurrentMeeting().meetingId
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.MEETING_MEDIA_STATE_CHANGED,
+            meetingId = meetingId,
+            note = buildMeetingLifecycleNote(meetingId),
+            microphoneOn = microphoneOn,
+            cameraOn = cameraOn,
+            audioOption = audioOption,
+            mediaChangeSource = mediaChangeSource
+        )
+    }
+
     fun recordMeetingAction(
         actionType: String,
         meetingId: String,
         targetUserIds: List<String> = emptyList(),
         note: String = "",
         emoji: String = "",
+        microphoneOn: Boolean? = null,
+        cameraOn: Boolean? = null,
+        audioOption: String = "",
+        exitAction: String = "",
+        mediaChangeSource: String = "",
         screenSharingEnabled: Boolean? = null,
         shareCode: String = ""
     ): MeetingActionSignal {
@@ -547,6 +607,11 @@ object DataRepository {
             targetUserIds = targetUserIds,
             note = note,
             emoji = emoji,
+            microphoneOn = microphoneOn,
+            cameraOn = cameraOn,
+            audioOption = audioOption,
+            exitAction = exitAction,
+            mediaChangeSource = mediaChangeSource,
             screenSharingEnabled = screenSharingEnabled,
             shareCode = shareCode,
             occurredAt = timestamp
@@ -612,7 +677,7 @@ object DataRepository {
     }
 
     private fun resetRuntimeSignalData() {
-        scheduledMeetingSignals = mutableListOf()
+        scheduledMeetingSignals = buildAutomationSeedScheduledMeetings()
         instantMeetingSessions = mutableListOf()
         runtimeChatMessages = mutableListOf()
         runtimeDirectMessages = mutableListOf()
@@ -635,6 +700,7 @@ object DataRepository {
         persistRuntimeJoinHistorySignal()
         persistRuntimeMeetingActions()
         persistProfileSignal()
+        persistRuntimeMeta()
         bumpRuntimeDataVersion()
     }
 
@@ -661,6 +727,88 @@ object DataRepository {
                 lastUsedAt = null
             )
         )
+    }
+
+    private fun buildAutomationSeedScheduledMeetings(): MutableList<ScheduledMeetingSignal> {
+        val zoneId = if (ZoneId.getAvailableZoneIds().contains(AUTOMATION_TIME_ZONE_ID)) {
+            ZoneId.of(AUTOMATION_TIME_ZONE_ID)
+        } else {
+            ZoneId.systemDefault()
+        }
+        val now = ZonedDateTime.now(zoneId)
+        val tomorrow = now.toLocalDate().plusDays(1)
+        val nextMayFirst = nextUpcomingMayFirst(now.toLocalDate())
+        val baseCreatedAt = System.currentTimeMillis()
+
+        val seeds = listOf(
+            buildAutomationSeedMeeting(
+                index = 1,
+                topic = "Daily Standup",
+                startDate = tomorrow,
+                startTime = LocalTime.of(8, 0),
+                durationMinutes = 30,
+                createdAt = baseCreatedAt,
+                zoneId = zoneId
+            ),
+            buildAutomationSeedMeeting(
+                index = 2,
+                topic = "Lunch Sync",
+                startDate = tomorrow,
+                startTime = LocalTime.of(12, 0),
+                durationMinutes = 60,
+                createdAt = baseCreatedAt,
+                zoneId = zoneId
+            ),
+            buildAutomationSeedMeeting(
+                index = 3,
+                topic = "May Planning Review",
+                startDate = nextMayFirst,
+                startTime = LocalTime.of(9, 0),
+                durationMinutes = 45,
+                createdAt = baseCreatedAt,
+                zoneId = zoneId
+            )
+        )
+
+        return seeds.toMutableList()
+    }
+
+    private fun buildAutomationSeedMeeting(
+        index: Int,
+        topic: String,
+        startDate: LocalDate,
+        startTime: LocalTime,
+        durationMinutes: Int,
+        createdAt: Long,
+        zoneId: ZoneId
+    ): ScheduledMeetingSignal {
+        val startDateTime = ZonedDateTime.of(startDate, startTime, zoneId)
+        val signalCreatedAt = createdAt + index
+        return ScheduledMeetingSignal(
+            signalId = "${RuntimeSignalPrefixes.RUNTIME_MEETING_ID_PREFIX}${signalCreatedAt}_seed_$index",
+            meetingNumber = generateMeetingNumber(signalCreatedAt, index),
+            topic = topic,
+            startTime = startDateTime.toInstant().toEpochMilli(),
+            durationMinutes = durationMinutes,
+            timeZoneId = zoneId.id,
+            repeat = "None",
+            calendar = "iCalendar",
+            encryption = "Enhanced",
+            inviteeUserIds = emptyList(),
+            passcode = DEFAULT_MEETING_PASSCODE,
+            waitingRoomEnabled = false,
+            usePersonalMeetingId = false,
+            createdAt = signalCreatedAt
+        )
+    }
+
+    private fun nextUpcomingMayFirst(today: LocalDate): LocalDate {
+        val currentYearCandidate = LocalDate.of(today.year, 5, 1)
+        return if (!currentYearCandidate.isBefore(today)) {
+            currentYearCandidate
+        } else {
+            LocalDate.of(today.year + 1, 5, 1)
+        }
     }
 
     private fun signalToMeeting(signal: ScheduledMeetingSignal): Meeting {
@@ -697,48 +845,86 @@ object DataRepository {
     private fun currentUserAsset(): User = users.first { it.userId == CURRENT_USER_ID }
 
     private fun persistRuntimeScheduledMeetingSignals() {
-        runCatching {
-            runtimeScheduledMeetingFile().writeText(gson.toJson(scheduledMeetingSignals), Charsets.UTF_8)
-        }
+        persistJson(
+            file = runtimeScheduledMeetingFile(),
+            payload = scheduledMeetingSignals,
+            label = RuntimeSignalFileNames.RUNTIME_SCHEDULED_MEETINGS
+        )
     }
 
     private fun persistRuntimeInstantMeetings() {
-        runCatching {
-            runtimeInstantMeetingFile().writeText(gson.toJson(instantMeetingSessions), Charsets.UTF_8)
-        }
+        persistJson(
+            file = runtimeInstantMeetingFile(),
+            payload = instantMeetingSessions,
+            label = RuntimeSignalFileNames.RUNTIME_INSTANT_MEETINGS
+        )
     }
 
     private fun persistRuntimeChatMessages() {
-        runCatching {
-            runtimeChatMessageFile().writeText(gson.toJson(runtimeChatMessages), Charsets.UTF_8)
-        }
+        persistJson(
+            file = runtimeChatMessageFile(),
+            payload = runtimeChatMessages,
+            label = RuntimeSignalFileNames.RUNTIME_CHAT_MESSAGES
+        )
     }
 
     private fun persistRuntimeDirectMessages() {
-        runCatching {
-            runtimeDirectMessageFile().writeText(gson.toJson(runtimeDirectMessages), Charsets.UTF_8)
-        }
+        persistJson(
+            file = runtimeDirectMessageFile(),
+            payload = runtimeDirectMessages,
+            label = RuntimeSignalFileNames.RUNTIME_DIRECT_MESSAGES
+        )
     }
 
     private fun persistRuntimeJoinHistorySignal() {
-        runCatching {
-            val payload = JoinMeetingHistorySignal(
-                entries = runtimeJoinHistoryEntries,
-                actions = runtimeJoinHistoryActions
-            )
-            runtimeJoinHistoryFile().writeText(gson.toJson(payload), Charsets.UTF_8)
-        }
+        val payload = JoinMeetingHistorySignal(
+            entries = runtimeJoinHistoryEntries,
+            actions = runtimeJoinHistoryActions
+        )
+        persistJson(
+            file = runtimeJoinHistoryFile(),
+            payload = payload,
+            label = RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY
+        )
     }
 
     private fun persistRuntimeMeetingActions() {
-        runCatching {
-            runtimeMeetingActionFile().writeText(gson.toJson(runtimeMeetingActions), Charsets.UTF_8)
-        }
+        persistJson(
+            file = runtimeMeetingActionFile(),
+            payload = runtimeMeetingActions,
+            label = RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS
+        )
     }
 
     private fun persistProfileSignal() {
-        runCatching {
-            runtimeProfileStateFile().writeText(gson.toJson(profileSignal), Charsets.UTF_8)
+        persistJson(
+            file = runtimeProfileStateFile(),
+            payload = profileSignal,
+            label = RuntimeSignalFileNames.RUNTIME_PROFILE_STATE
+        )
+    }
+
+    private fun persistRuntimeMeta() {
+        persistJson(
+            file = runtimeMetaFile(),
+            payload = RuntimeSignalMeta(
+                schemaVersion = RUNTIME_SCHEMA_VERSION,
+                seedScheduledMeetingCount = AUTOMATION_SEED_MEETING_COUNT,
+                contactCount = getContacts().size,
+                generatedAt = System.currentTimeMillis()
+            ),
+            label = RuntimeSignalFileNames.RUNTIME_META
+        )
+    }
+
+    private fun persistJson(file: File, payload: Any, label: String) {
+        try {
+            file.parentFile?.mkdirs()
+            file.writeText(gson.toJson(payload), Charsets.UTF_8)
+            Log.d(TAG, "Persisted $label to ${file.absolutePath}")
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to persist $label to ${file.absolutePath}", error)
+            throw IllegalStateException("Failed to persist $label", error)
         }
     }
 
@@ -752,6 +938,16 @@ object DataRepository {
             screenSharingEnabled = false,
             shareCode = activeSession.shareCode
         )
+    }
+
+    private fun buildMeetingLifecycleNote(meetingId: String): String {
+        instantMeetingSessions.firstOrNull { it.signalId == meetingId }?.let { session ->
+            return "Instant meeting source=${session.source}"
+        }
+        scheduledMeetingSignals.firstOrNull { it.signalId == meetingId }?.let {
+            return "Scheduled meeting"
+        }
+        return "Static meeting"
     }
 
     private fun generateMeetingNumber(seed: Long, index: Int): String {
@@ -787,6 +983,10 @@ object DataRepository {
 
     private fun runtimeProfileStateFile(): File {
         return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_PROFILE_STATE)
+    }
+
+    private fun runtimeMetaFile(): File {
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_META)
     }
 
     private fun bumpRuntimeDataVersion() {

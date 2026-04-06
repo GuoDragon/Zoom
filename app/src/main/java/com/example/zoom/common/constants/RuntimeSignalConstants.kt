@@ -8,6 +8,7 @@ object RuntimeSignalFileNames {
     const val RUNTIME_INSTANT_MEETINGS = "runtime_instant_meetings.json"
     const val RUNTIME_PROFILE_STATE = "runtime_profile_state.json"
     const val RUNTIME_DIRECT_MESSAGES = "runtime_direct_messages.json"
+    const val RUNTIME_META = "runtime_meta.json"
 }
 
 object RuntimeSignalPrefixes {
@@ -25,6 +26,9 @@ object JoinHistoryActionTypes {
 }
 
 object MeetingActionTypes {
+    const val MEETING_STARTED = "MEETING_STARTED"
+    const val MEETING_EXITED = "MEETING_EXITED"
+    const val MEETING_MEDIA_STATE_CHANGED = "MEETING_MEDIA_STATE_CHANGED"
     const val MUTE_ALL = "MUTE_ALL"
     const val UNMUTE_ALL = "UNMUTE_ALL"
     const val INVITE_CONTACTS = "INVITE_CONTACTS"
@@ -34,4 +38,11 @@ object MeetingActionTypes {
     const val EMOJI_REACTION = "EMOJI_REACTION"
     const val COPY_INVITE_LINK = "COPY_INVITE_LINK"
     const val SAFE_DRIVING_VOICE_NOTE = "SAFE_DRIVING_VOICE_NOTE"
+}
+
+object MeetingMediaChangeSources {
+    const val MAIN_MICROPHONE_BUTTON = "MAIN_MICROPHONE_BUTTON"
+    const val MAIN_CAMERA_BUTTON = "MAIN_CAMERA_BUTTON"
+    const val MAIN_AUDIO_MENU = "MAIN_AUDIO_MENU"
+    const val SAFE_DRIVING_AUDIO_MENU = "SAFE_DRIVING_AUDIO_MENU"
 }

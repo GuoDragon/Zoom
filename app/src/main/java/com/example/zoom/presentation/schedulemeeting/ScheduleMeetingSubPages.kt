@@ -261,10 +261,38 @@ fun ScheduleAddInviteesPage(
             it.name.contains(query, ignoreCase = true) ||
             it.email.contains(query, ignoreCase = true)
     }
-    val sideLetters = filtered
-        .mapNotNull { it.name.firstOrNull()?.uppercaseChar() }
-        .filter { it in 'A'..'Z' }
-        .distinct()
+    val alphabetLetters = remember { ('A'..'Z').toList() }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    var highlightedLetter by remember(filtered) {
+        mutableStateOf(
+            filtered.firstOrNull()
+                ?.name
+                ?.firstOrNull()
+                ?.uppercaseChar()
+                ?.takeIf { it in 'A'..'Z' }
+                ?: 'A'
+        )
+    }
+    val firstIndexByLetter = remember(filtered) {
+        alphabetLetters.associateWith { letter ->
+            filtered.indexOfFirst { option ->
+                option.name.firstOrNull()?.uppercaseChar() == letter
+            }.takeIf { it >= 0 }
+        }
+    }
+
+    LaunchedEffect(listState.firstVisibleItemIndex, filtered) {
+        val visibleLetter = filtered
+            .getOrNull(listState.firstVisibleItemIndex)
+            ?.name
+            ?.firstOrNull()
+            ?.uppercaseChar()
+            ?.takeIf { it in 'A'..'Z' }
+        if (visibleLetter != null) {
+            highlightedLetter = visibleLetter
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -328,7 +356,10 @@ fun ScheduleAddInviteesPage(
                     )
                 }
 
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState
+                ) {
                     items(filtered) { invitee ->
                         ScheduleCheckRow(
                             title = invitee.name,
@@ -346,20 +377,39 @@ fun ScheduleAddInviteesPage(
                     .padding(end = 4.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                sideLetters.forEach { letter ->
-                    Text(
-                        text = letter.toString(),
-                        color = ZoomBlue,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(vertical = 1.dp)
+                alphabetLetters.forEach { letter ->
+                    val targetIndex = findNearestTimeZoneIndex(
+                        tappedLetter = letter,
+                        alphabetLetters = alphabetLetters,
+                        firstIndexByLetter = firstIndexByLetter
                     )
+                    val isHighlighted = highlightedLetter == letter
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 1.dp)
+                            .size(16.dp)
+                            .background(
+                                color = if (isHighlighted) ZoomBlue else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .clickable(enabled = targetIndex != null) {
+                                highlightedLetter = letter
+                                targetIndex?.let { index ->
+                                    coroutineScope.launch {
+                                        listState.animateScrollToItem(index)
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = letter.toString(),
+                            color = if (isHighlighted) Color.White else ZoomBlue,
+                            fontSize = 11.sp,
+                            fontWeight = if (isHighlighted) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
                 }
-                Text(
-                    text = "#",
-                    color = ZoomBlue,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(vertical = 1.dp)
-                )
             }
         }
     }

@@ -33,6 +33,8 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,20 +45,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.ui.theme.ZoomBlue
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onContactClick: (String) -> Unit
 ) {
     var uiState by remember { mutableStateOf<SearchUiState?>(null) }
+    val searchFocusRequester = remember { FocusRequester() }
 
     val presenter = remember {
         val view = object : SearchContract.View {
@@ -85,7 +93,8 @@ fun SearchScreen(
                     query = state.query,
                     onQueryChange = presenter::onQueryChanged,
                     onClearQuery = { presenter.onQueryChanged("") },
-                    onCancelClick = onBackClick
+                    onCancelClick = onBackClick,
+                    focusRequester = searchFocusRequester
                 )
 
                 SearchTabs(
@@ -101,7 +110,10 @@ fun SearchScreen(
                     )
                 }
 
-                SearchPageContent(state = state)
+                SearchPageContent(
+                    state = state,
+                    onContactClick = onContactClick
+                )
             }
         }
 
@@ -129,7 +141,8 @@ private fun SearchHeader(
     query: String,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
-    onCancelClick: () -> Unit
+    onCancelClick: () -> Unit,
+    focusRequester: FocusRequester
 ) {
     Row(
         modifier = Modifier
@@ -141,6 +154,7 @@ private fun SearchHeader(
             query = query,
             onQueryChange = onQueryChange,
             onClearQuery = onClearQuery,
+            focusRequester = focusRequester,
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -159,55 +173,66 @@ private fun SearchInputField(
     query: String,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
+    focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFFF3F5F8))
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            tint = Color(0xFF7B8796),
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            textStyle = TextStyle(
-                color = Color(0xFF263648),
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(focusRequester) {
+        delay(250)
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier.focusRequester(focusRequester),
+        singleLine = true,
+        textStyle = TextStyle(
+            color = Color(0xFF263648),
+            fontSize = 16.sp
+        ),
+        placeholder = {
+            Text(
+                text = "Search",
+                color = Color(0xFF95A0AE),
                 fontSize = 16.sp
-            ),
-            decorationBox = { innerTextField ->
-                if (query.isEmpty()) {
-                    Text(
-                        text = "Search",
-                        color = Color(0xFF95A0AE),
-                        fontSize = 16.sp
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                tint = Color(0xFF7B8796),
+                modifier = Modifier.size(18.dp)
+            )
+        },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                IconButton(
+                    onClick = onClearQuery,
+                    modifier = Modifier.size(18.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear",
+                        tint = Color(0xFF95A0AE)
                     )
                 }
-                innerTextField()
             }
+        } else {
+            null
+        },
+        shape = RoundedCornerShape(14.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFF3F5F8),
+            unfocusedContainerColor = Color(0xFFF3F5F8),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            cursorColor = ZoomBlue
         )
-        if (query.isNotEmpty()) {
-            IconButton(
-                onClick = onClearQuery,
-                modifier = Modifier.size(18.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Clear",
-                    tint = Color(0xFF95A0AE)
-                )
-            }
-        }
-    }
+    )
 }
 
 @Composable

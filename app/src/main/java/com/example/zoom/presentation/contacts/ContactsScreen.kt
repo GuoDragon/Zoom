@@ -2,6 +2,7 @@ package com.example.zoom.presentation.contacts
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -71,6 +73,18 @@ fun ContactsScreen(
             it.name.contains(query, ignoreCase = true) ||
             it.email.contains(query, ignoreCase = true) ||
             it.phone.contains(query, ignoreCase = true)
+    }
+    val quickAccessContacts = remember(state.contacts, query) {
+        if (query.isNotBlank()) {
+            emptyList()
+        } else {
+            state.contacts
+                .sortedWith(
+                    compareBy<ContactListItemUi> { if (it.name == "Natalie Cox") 0 else 1 }
+                        .thenBy { it.name }
+                )
+                .take(4)
+        }
     }
 
     Scaffold(
@@ -140,6 +154,56 @@ fun ContactsScreen(
                         inner()
                     }
                 )
+            }
+
+            if (quickAccessContacts.isNotEmpty()) {
+                Text(
+                    text = "Quick access",
+                    color = Color(0xFF6D7785),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 6.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    quickAccessContacts.forEach { contact ->
+                        Column(
+                            modifier = Modifier
+                                .width(104.dp)
+                                .padding(end = 12.dp)
+                                .background(Color(0xFFF5F7FA), RoundedCornerShape(18.dp))
+                                .clickable { onContactClick(contact.userId) }
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .background(Color(0xFF4D76D0), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = contact.initials,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Text(
+                                text = contact.name,
+                                color = Color(0xFF243447),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 2,
+                                modifier = Modifier.padding(top = 10.dp)
+                            )
+                        }
+                    }
+                }
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {

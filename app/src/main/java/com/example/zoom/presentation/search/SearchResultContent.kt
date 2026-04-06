@@ -41,13 +41,18 @@ import com.example.zoom.ui.theme.ZoomBlue
 @Composable
 fun SearchPageContent(
     state: SearchUiState,
+    onContactClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (state.selectedCategory) {
         SearchCategory.TopResults -> if (state.query.isBlank()) {
             SearchPromptContent("Type keywords to start your search", modifier)
         } else {
-            SearchTopResultsContent(state.topResults, modifier)
+            SearchTopResultsContent(
+                state = state.topResults,
+                onContactClick = onContactClick,
+                modifier = modifier
+            )
         }
 
         SearchCategory.Messages -> if (state.query.isBlank()) {
@@ -71,7 +76,11 @@ fun SearchPageContent(
         SearchCategory.Contacts -> if (state.query.isBlank()) {
             SearchPromptContent("Type keywords to start your search", modifier)
         } else {
-            SearchContactsContent(state.contactResults, modifier)
+            SearchContactsContent(
+                results = state.contactResults,
+                onContactClick = onContactClick,
+                modifier = modifier
+            )
         }
 
         SearchCategory.Files,
@@ -89,6 +98,7 @@ fun SearchPageContent(
 @Composable
 fun SearchTopResultsContent(
     state: SearchTopResultsUiState,
+    onContactClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hasAnyResults = state.messages.isNotEmpty() ||
@@ -120,7 +130,7 @@ fun SearchTopResultsContent(
         }
         if (state.contacts.isNotEmpty()) {
             item { SectionHeader("Contacts") }
-            items(state.contacts) { ContactResultRow(it) }
+            items(state.contacts) { ContactResultRow(contact = it, onClick = { onContactClick(it.userId) }) }
         }
     }
 }
@@ -182,6 +192,7 @@ fun SearchMeetingsContent(
 @Composable
 fun SearchContactsContent(
     results: List<ContactResult>,
+    onContactClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (results.isEmpty()) {
@@ -193,7 +204,7 @@ fun SearchContactsContent(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        items(results) { ContactResultRow(it) }
+        items(results) { ContactResultRow(contact = it, onClick = { onContactClick(it.userId) }) }
     }
 }
 
@@ -537,10 +548,14 @@ private fun MeetingResultCard(meeting: MeetingResult) {
 }
 
 @Composable
-private fun ContactResultRow(contact: ContactResult) {
+private fun ContactResultRow(
+    contact: ContactResult,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

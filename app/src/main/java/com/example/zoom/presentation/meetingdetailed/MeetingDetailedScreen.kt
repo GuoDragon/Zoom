@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.common.constants.MeetingMediaChangeSources
 import com.example.zoom.common.constants.MeetingActionTypes
 import com.example.zoom.data.DataRepository
 import com.example.zoom.presentation.meetingchatdetailed.MeetingChatDetailedOverlay
@@ -126,6 +127,19 @@ fun MeetingDetailedScreen(
         var cameraOn by remember(initialConfig) { mutableStateOf(initialConfig.cameraOn) }
         var selectedAudioOption by remember(initialConfig) { mutableStateOf(initialConfig.audioOption) }
         var showAudioMenu by remember { mutableStateOf(false) }
+        fun recordMediaStateChange(
+            updatedMicrophoneOn: Boolean = microphoneOn,
+            updatedCameraOn: Boolean = cameraOn,
+            updatedAudioOption: MeetingAudioOption = selectedAudioOption,
+            mediaChangeSource: String
+        ) {
+            DataRepository.recordCurrentMeetingMediaStateChanged(
+                microphoneOn = updatedMicrophoneOn,
+                cameraOn = updatedCameraOn,
+                audioOption = updatedAudioOption.routeValue,
+                mediaChangeSource = mediaChangeSource
+            )
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -136,8 +150,22 @@ fun MeetingDetailedScreen(
                         MeetingControlBar(
                             microphoneOn = microphoneOn,
                             cameraOn = cameraOn,
-                            onMicrophoneClick = { microphoneOn = !microphoneOn },
-                            onCameraClick = { cameraOn = !cameraOn },
+                            onMicrophoneClick = {
+                                val updatedMicrophoneOn = !microphoneOn
+                                microphoneOn = updatedMicrophoneOn
+                                recordMediaStateChange(
+                                    updatedMicrophoneOn = updatedMicrophoneOn,
+                                    mediaChangeSource = MeetingMediaChangeSources.MAIN_MICROPHONE_BUTTON
+                                )
+                            },
+                            onCameraClick = {
+                                val updatedCameraOn = !cameraOn
+                                cameraOn = updatedCameraOn
+                                recordMediaStateChange(
+                                    updatedCameraOn = updatedCameraOn,
+                                    mediaChangeSource = MeetingMediaChangeSources.MAIN_CAMERA_BUTTON
+                                )
+                            },
                             onChatClick = { showChatOverlay = true },
                             onMoreClick = { showMoreOverlay = true },
                             onEndClick = onEndClick
@@ -157,9 +185,16 @@ fun MeetingDetailedScreen(
                         onTitleClick = onInfoClick,
                         onSpeakerClick = { showAudioMenu = !showAudioMenu },
                         onAudioOptionSelected = { option ->
+                            if (option != selectedAudioOption) {
+                                recordMediaStateChange(
+                                    updatedAudioOption = option,
+                                    mediaChangeSource = MeetingMediaChangeSources.MAIN_AUDIO_MENU
+                                )
+                            }
                             selectedAudioOption = option
                             showAudioMenu = false
                         },
+                        onSafeDrivingClick = { pageMode = MeetingPageMode.SAFE_DRIVING },
                         onSwipeRight = { pageMode = MeetingPageMode.SAFE_DRIVING }
                     )
                     MeetingPageMode.SAFE_DRIVING -> MeetingSafeDrivingModeScreen(
@@ -169,6 +204,12 @@ fun MeetingDetailedScreen(
                         showAudioMenu = showAudioMenu,
                         onSpeakerClick = { showAudioMenu = !showAudioMenu },
                         onAudioOptionSelected = { option ->
+                            if (option != selectedAudioOption) {
+                                recordMediaStateChange(
+                                    updatedAudioOption = option,
+                                    mediaChangeSource = MeetingMediaChangeSources.SAFE_DRIVING_AUDIO_MENU
+                                )
+                            }
                             selectedAudioOption = option
                             showAudioMenu = false
                         },
@@ -197,13 +238,18 @@ fun MeetingDetailedScreen(
 
             if (showMoreOverlay) {
                 MeetingMoreDetailedOverlay(
-                    onRaiseHand = {
-                        isHandRaised = true
+                    isHandRaised = isHandRaised,
+                    onHandToggle = {
+                        val raisingHand = !isHandRaised
+                        isHandRaised = raisingHand
                         DataRepository.recordMeetingAction(
-                            actionType = MeetingActionTypes.RAISE_HAND,
+                            actionType = if (raisingHand) {
+                                MeetingActionTypes.RAISE_HAND
+                            } else {
+                                MeetingActionTypes.LOWER_HAND
+                            },
                             meetingId = meetingId
                         )
-                        showMoreOverlay = false
                     },
                     onEmojiSelected = { emoji ->
                         nextEmojiReactionId += 1
@@ -323,7 +369,7 @@ fun MeetingDetailedScreen(
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     Text(
-                        text = "🖐 Lower hand",
+                        text = "Lower hand",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -346,6 +392,7 @@ private fun MeetingMainPageContent(
     onTitleClick: () -> Unit,
     onSpeakerClick: () -> Unit,
     onAudioOptionSelected: (MeetingAudioOption) -> Unit,
+    onSafeDrivingClick: () -> Unit,
     onSwipeRight: () -> Unit
 ) {
     var totalHorizontalDrag by remember { mutableStateOf(0f) }
@@ -418,6 +465,24 @@ private fun MeetingMainPageContent(
                     .align(Alignment.BottomStart)
                     .padding(start = 12.dp, bottom = 84.dp)
             )
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 112.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xFF2A2A2D))
+                    .clickable(onClick = onSafeDrivingClick)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Safe driving",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

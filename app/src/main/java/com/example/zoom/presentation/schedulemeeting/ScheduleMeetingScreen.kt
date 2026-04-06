@@ -306,10 +306,6 @@ fun ScheduleMeetingScreen(
     if (showStartsDialog) {
         ScheduleStartsTimeDialog(
             selectedTimeMillis = screenDraft.startTimeMillis,
-            options = buildStartTimeOptions(
-                selectedTimeMillis = screenDraft.startTimeMillis,
-                timeZoneId = screenDraft.timeZoneId
-            ),
             timeZoneId = screenDraft.timeZoneId,
             onSelect = { selectedTime ->
                 draft = draft?.copy(startTimeMillis = selectedTime)

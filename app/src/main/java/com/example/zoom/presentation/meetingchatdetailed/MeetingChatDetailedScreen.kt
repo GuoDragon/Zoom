@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,10 +46,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +64,7 @@ import com.example.zoom.ui.theme.ZoomBlue
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingChatDetailedOverlay(
@@ -70,8 +76,10 @@ fun MeetingChatDetailedOverlay(
     var inputText by remember { mutableStateOf("") }
 
     val listState = rememberLazyListState()
+    val inputFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val quickReplies = remember { listOf("I'm lcl.", "Hello", "Thanks") }
     val dismissInteraction = remember { MutableInteractionSource() }
-    val panelInteraction = remember { MutableInteractionSource() }
     val view = remember {
         object : MeetingChatDetailedContract.View {
             override fun showContent(content: MeetingChatDetailedUiState) {
@@ -83,12 +91,24 @@ fun MeetingChatDetailedOverlay(
 
     LaunchedEffect(Unit) {
         presenter.loadData()
+        delay(250)
+        inputFocusRequester.requestFocus()
+        keyboardController?.show()
     }
 
     LaunchedEffect(localMessages.size) {
         if (localMessages.isNotEmpty()) {
             listState.animateScrollToItem(localMessages.lastIndex)
         }
+    }
+
+    fun sendMessageContent(content: String) {
+        if (content.isBlank()) return
+
+        presenter.sendMessage(content)?.let { newMessage ->
+            localMessages = localMessages + newMessage
+        }
+        inputText = ""
     }
 
     Column(
@@ -109,14 +129,10 @@ fun MeetingChatDetailedOverlay(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, bottom = 70.dp)
-                .height(440.dp)
+                .padding(start = 8.dp, end = 8.dp)
+                .height(470.dp)
                 .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
                 .background(Color(0xFF2B2B2E))
-                .clickable(
-                    indication = null,
-                    interactionSource = panelInteraction
-                ) {}
         ) {
             MeetingChatDragHandle()
             MeetingChatHeader(
@@ -140,18 +156,16 @@ fun MeetingChatDetailedOverlay(
                 }
             }
 
+            MeetingChatQuickReplyRow(
+                replies = quickReplies,
+                onReplyClick = ::sendMessageContent
+            )
+
             MeetingChatComposer(
                 inputText = inputText,
                 onInputChange = { inputText = it },
-                onSendClick = {
-                    if (inputText.isBlank()) return@MeetingChatComposer
-
-                    presenter.sendMessage(inputText)?.let { newMessage ->
-                        localMessages = localMessages + newMessage
-                    }
-
-                    inputText = ""
-                }
+                focusRequester = inputFocusRequester,
+                onSendClick = { sendMessageContent(inputText) }
             )
         }
     }
@@ -390,83 +404,90 @@ private fun MeetingChatActionIcon(
 private fun MeetingChatComposer(
     inputText: String,
     onInputChange: (String) -> Unit,
+    focusRequester: FocusRequester,
     onSendClick: () -> Unit
 ) {
-    Column(
+    val sendEnabled = inputText.isNotBlank()
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 14.dp)
+            .background(Color.White)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        TextField(
+            value = inputText,
+            onValueChange = onInputChange,
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+                .focusRequester(focusRequester),
+            placeholder = {
+                Text(
+                    text = "Type a message",
+                    color = Color(0xFF8E8E93),
+                    fontSize = 15.sp
+                )
+            },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFF2F4F7),
+                unfocusedContainerColor = Color(0xFFF2F4F7),
+                focusedTextColor = Color(0xFF111827),
+                unfocusedTextColor = Color(0xFF111827),
+                cursorColor = ZoomBlue,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+            shape = RoundedCornerShape(18.dp),
+            singleLine = true
+        )
+
+        Box(
+            modifier = Modifier
+                .padding(start = 10.dp)
+                .width(76.dp)
+                .height(48.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(if (sendEnabled) ZoomBlue else Color(0xFFE5E7EB))
+                .clickable(enabled = sendEnabled, onClick = onSendClick),
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.common_add),
-                    tint = Color(0xFFBDBDC2)
-                )
-            }
-
-            TextField(
-                value = inputText,
-                onValueChange = onInputChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(42.dp),
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.meeting_chat_message_everyone),
-                        color = Color(0xFF8E8E93),
-                        fontSize = 15.sp
-                    )
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFF3A3A40),
-                    unfocusedContainerColor = Color(0xFF3A3A40),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    cursorColor = ZoomBlue,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true
-            )
-
-            IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
-                Icon(
-                    imageVector = Icons.Default.SentimentSatisfied,
-                    contentDescription = stringResource(R.string.common_emoji),
-                    tint = Color(0xFFBDBDC2)
-                )
-            }
-            IconButton(onClick = onSendClick, modifier = Modifier.size(34.dp)) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = stringResource(R.string.common_send),
-                    tint = if (inputText.isNotBlank()) ZoomBlue else Color(0xFF5E5E63)
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier.padding(start = 40.dp, top = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ForwardToInbox,
-                contentDescription = null,
-                tint = ZoomBlue,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(R.string.meeting_chat_visibility_tip),
-                color = Color(0xFF9C9CA2),
-                fontSize = 13.sp
+                text = stringResource(R.string.common_send),
+                color = if (sendEnabled) Color.White else Color(0xFF94A3B8),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
             )
+        }
+    }
+}
+
+@Composable
+private fun MeetingChatQuickReplyRow(
+    replies: List<String>,
+    onReplyClick: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        replies.forEach { reply ->
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFF3A3A3E))
+                    .clickable { onReplyClick(reply) }
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    text = reply,
+                    color = Color.White,
+                    fontSize = 13.sp
+                )
+            }
         }
     }
 }

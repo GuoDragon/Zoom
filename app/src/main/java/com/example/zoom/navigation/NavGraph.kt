@@ -91,7 +91,12 @@ fun ZoomNavGraph(
             )
         }
         composable(Screen.Search.route) {
-            SearchScreen(onBackClick = { navController.popBackStack() })
+            SearchScreen(
+                onBackClick = { navController.popBackStack() },
+                onContactClick = { userId ->
+                    navController.navigate(Screen.DirectChat.createRoute(userId))
+                }
+            )
         }
         composable(Screen.HostMeeting.route) {
             HostMeetingScreen(
@@ -198,6 +203,7 @@ fun ZoomNavGraph(
             LeaveMeetingDetailedScreen(
                 onEndForAllClick = {
                     DataRepository.stopCurrentScreenShareSessionIfActive()
+                    DataRepository.recordCurrentMeetingExited(MeetingExitAction.END_FOR_ALL.name)
                     onMeetingDetailedExit(MeetingExitAction.END_FOR_ALL)
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = false }
@@ -206,6 +212,7 @@ fun ZoomNavGraph(
                 },
                 onLeaveClick = {
                     DataRepository.stopCurrentScreenShareSessionIfActive()
+                    DataRepository.recordCurrentMeetingExited(MeetingExitAction.LEAVE_SELF.name)
                     onMeetingDetailedExit(MeetingExitAction.LEAVE_SELF)
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = false }
