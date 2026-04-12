@@ -23,6 +23,7 @@ data class ScheduleMeetingDetailedUiState(
     val canEdit: Boolean,
     val inviteeSummary: String,
     val waitingRoomLabel: String,
+    val allowJoinBeforeHostLabel: String,
     val selectedInviteeUserIds: Set<String>,
     val inviteeOptions: List<ScheduleMeetingInviteeOption>,
     val inviteMessageText: String,

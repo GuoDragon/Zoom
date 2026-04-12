@@ -186,6 +186,14 @@ fun MeetingParticipantsDetailedOverlay(onDismiss: () -> Unit) {
                     if (participant != null) {
                         ParticipantMorePage(
                             participant = participant,
+                            onAskToUnmute = {
+                                participants = presenter.askParticipantToUnmute(
+                                    participants = participants,
+                                    meetingId = displayState.meetingId,
+                                    targetUserId = participant.userId
+                                )
+                                currentPage = ParticipantsSubPage.PARTICIPANTS
+                            },
                             onCancel = { currentPage = ParticipantsSubPage.PARTICIPANTS }
                         )
                     }
@@ -905,17 +913,18 @@ private fun ContactRow(
 @Composable
 private fun ParticipantMorePage(
     participant: MeetingParticipantUi,
+    onAskToUnmute: () -> Unit,
     onCancel: () -> Unit
 ) {
     val actions = listOf(
-        MoreAction("Chat", Icons.AutoMirrored.Filled.Chat, false),
-        MoreAction("Mute", Icons.Default.MicOff, false),
-        MoreAction("Stop Video", Icons.Default.VideocamOff, false),
-        MoreAction("Make Host", Icons.Default.PersonAdd, false),
-        MoreAction("Make Co-Host", Icons.Default.PersonAdd, false),
-        MoreAction("Put in Waiting Room", Icons.Default.PersonOff, false),
-        MoreAction("Remove", Icons.Default.PersonRemove, true),
-        MoreAction("Report", Icons.Default.Report, true)
+        ActionRowUi("Chat", Icons.AutoMirrored.Filled.Chat, false, onClick = {}),
+        ActionRowUi("Ask to unmute", Icons.Default.Mic, false, onClick = onAskToUnmute),
+        ActionRowUi("Stop Video", Icons.Default.VideocamOff, false, onClick = {}),
+        ActionRowUi("Make Host", Icons.Default.PersonAdd, false, onClick = {}),
+        ActionRowUi("Make Co-Host", Icons.Default.PersonAdd, false, onClick = {}),
+        ActionRowUi("Put in Waiting Room", Icons.Default.PersonOff, false, onClick = {}),
+        ActionRowUi("Remove", Icons.Default.PersonRemove, true, onClick = {}),
+        ActionRowUi("Report", Icons.Default.Report, true, onClick = {})
     )
 
     Column(
@@ -972,7 +981,7 @@ private fun ParticipantMorePage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { }
+                        .clickable(onClick = action.onClick)
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1015,10 +1024,11 @@ private fun ParticipantMorePage(
     }
 }
 
-private data class MoreAction(
+private data class ActionRowUi(
     val label: String,
     val icon: ImageVector,
-    val isDestructive: Boolean
+    val isDestructive: Boolean,
+    val onClick: () -> Unit
 )
 
 // ── Shared Components ────────────────────────────────────────────────────

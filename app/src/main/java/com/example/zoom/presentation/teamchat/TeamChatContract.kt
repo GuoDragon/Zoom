@@ -11,7 +11,8 @@ interface TeamChatContract {
 
 data class TeamChatUiState(
     val currentUserInitial: String,
-    val chats: List<TeamChatThreadUi>
+    val chats: List<TeamChatThreadUi>,
+    val unreadSessionCount: Int
 )
 
 data class TeamChatThreadUi(
@@ -21,5 +22,6 @@ data class TeamChatThreadUi(
     val dateLabel: String,
     val avatarText: String,
     val sortTimestamp: Long,
+    val unreadCount: Int = 0,
     val directUserId: String? = null
 )

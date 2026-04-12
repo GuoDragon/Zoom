@@ -75,6 +75,7 @@ class ScheduleMeetingDetailedPresenter(
                 canEdit = signal != null,
                 inviteeSummary = inviteeSummary,
                 waitingRoomLabel = if (signal?.waitingRoomEnabled == true) "On" else "Off",
+                allowJoinBeforeHostLabel = if (signal?.allowJoinBeforeHost != false) "On" else "Off",
                 selectedInviteeUserIds = selectedInvitees,
                 inviteeOptions = inviteeOptions,
                 inviteMessageText = inviteMessageText,

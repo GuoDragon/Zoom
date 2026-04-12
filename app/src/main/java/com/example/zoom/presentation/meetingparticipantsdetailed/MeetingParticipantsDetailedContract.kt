@@ -50,6 +50,11 @@ interface MeetingParticipantsDetailedContract {
             participants: List<MeetingParticipantUi>,
             meetingId: String
         ): List<MeetingParticipantUi>
+        fun askParticipantToUnmute(
+            participants: List<MeetingParticipantUi>,
+            meetingId: String,
+            targetUserId: String
+        ): List<MeetingParticipantUi>
         fun inviteContacts(
             meetingId: String,
             selectedContactIds: Set<String>

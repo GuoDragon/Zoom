@@ -1,9 +1,12 @@
 package com.example.zoom.presentation.settings
 
+import com.example.zoom.data.DataRepository
+
 class SettingsPresenter(
     private val view: SettingsContract.View
 ) : SettingsContract.Presenter {
     override fun loadData() {
+        val preferences = DataRepository.getMeetingPreferencesSignal()
         view.showSettings(
             SettingsUiState(
                 groups = listOf(
@@ -38,8 +41,20 @@ class SettingsPresenter(
                 accountActions = listOf(
                     SettingsItem("switch_account", "Switch account"),
                     SettingsItem("sign_out", "Sign out")
-                )
+                ),
+                autoConnectAudioOn = preferences.autoConnectAudioOn,
+                autoTurnOnCameraOn = preferences.autoTurnOnCameraOn
             )
         )
+    }
+
+    override fun updateAutoConnectAudio(enabled: Boolean) {
+        DataRepository.updateMeetingPreferences(autoConnectAudioOn = enabled)
+        loadData()
+    }
+
+    override fun updateAutoTurnOnCamera(enabled: Boolean) {
+        DataRepository.updateMeetingPreferences(autoTurnOnCameraOn = enabled)
+        loadData()
     }
 }

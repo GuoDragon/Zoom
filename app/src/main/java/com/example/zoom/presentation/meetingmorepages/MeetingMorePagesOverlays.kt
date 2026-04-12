@@ -36,7 +36,9 @@ import kotlinx.coroutines.delay
 @Composable
 fun MeetingShareOverlay(
     onDismiss: () -> Unit,
-    onShareScreenChanged: (Boolean) -> Unit
+    onShareScreenChanged: (Boolean) -> Unit,
+    onPauseShare: () -> Unit = {},
+    onResumeShare: () -> Unit = {}
 ) {
     val state = rememberMeetingMorePagesUiState()
     var selectedLabel by remember { mutableStateOf<String?>(null) }
@@ -76,6 +78,55 @@ fun MeetingShareOverlay(
             )
         }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF34353A))
+                    .clickable {
+                        if (shareScreenEnabled) {
+                            onPauseShare()
+                        }
+                    }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Pause share",
+                    color = if (shareScreenEnabled) Color.White else Color(0xFF7D8089),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF34353A))
+                    .clickable {
+                        if (shareScreenEnabled) {
+                            onResumeShare()
+                        }
+                    }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Resume share",
+                    color = if (shareScreenEnabled) Color.White else Color(0xFF7D8089),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(18.dp))
 
         state?.shareOptions?.forEach { option ->
@@ -94,7 +145,10 @@ fun MeetingShareOverlay(
 }
 
 @Composable
-fun MeetingHostToolsOverlay(onDismiss: () -> Unit) {
+fun MeetingHostToolsOverlay(
+    onDismiss: () -> Unit,
+    onToolSelected: (String) -> Unit = {}
+) {
     val state = rememberMeetingMorePagesUiState()
     var selectedLabel by remember { mutableStateOf<String?>(null) }
     var suspended by remember { mutableStateOf(false) }
@@ -111,6 +165,7 @@ fun MeetingHostToolsOverlay(onDismiss: () -> Unit) {
                 selected = selectedLabel == option.label,
                 onClick = {
                     selectedLabel = if (selectedLabel == option.label) null else option.label
+                    onToolSelected(option.label)
                 }
             )
         }

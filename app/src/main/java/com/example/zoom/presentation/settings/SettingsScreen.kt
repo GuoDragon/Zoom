@@ -44,6 +44,7 @@ import com.example.zoom.ui.components.ProfileCard
 import com.example.zoom.ui.components.ProfileCardDivider
 import com.example.zoom.ui.components.ProfileListRow
 import com.example.zoom.ui.components.ProfilePageBackground
+import com.example.zoom.ui.components.ZoomSettingSwitchRow
 import com.example.zoom.ui.components.ZoomTopBarInsets
 import com.example.zoom.ui.theme.ZoomBlue
 import com.example.zoom.ui.theme.ZoomTextSecondary
@@ -52,17 +53,22 @@ import com.example.zoom.ui.theme.ZoomTextSecondary
 @Composable
 fun SettingsScreen(onBackClick: () -> Unit) {
     var uiState by remember { mutableStateOf<SettingsUiState?>(null) }
+    var autoConnectAudioOn by remember { mutableStateOf(false) }
+    var autoTurnOnCameraOn by remember { mutableStateOf(false) }
 
     val view = remember {
         object : SettingsContract.View {
             override fun showSettings(content: SettingsUiState) {
                 uiState = content
+                autoConnectAudioOn = content.autoConnectAudioOn
+                autoTurnOnCameraOn = content.autoTurnOnCameraOn
             }
         }
     }
+    val presenter = remember(view) { SettingsPresenter(view) }
 
     LaunchedEffect(Unit) {
-        SettingsPresenter(view).loadData()
+        presenter.loadData()
     }
 
     Scaffold(
@@ -86,6 +92,31 @@ fun SettingsScreen(onBackClick: () -> Unit) {
                     .padding(padding)
             ) {
                 item { Spacer(modifier = Modifier.height(12.dp)) }
+
+                item {
+                    ProfilePageBackground(modifier = Modifier.fillParentMaxWidth()) {
+                        ProfileCard {
+                            ZoomSettingSwitchRow(
+                                title = "Auto-connect audio when joining meeting",
+                                checked = autoConnectAudioOn,
+                                onCheckedChange = {
+                                    autoConnectAudioOn = it
+                                    presenter.updateAutoConnectAudio(it)
+                                }
+                            )
+                            ProfileCardDivider()
+                            ZoomSettingSwitchRow(
+                                title = "Auto-turn on camera when joining meeting",
+                                checked = autoTurnOnCameraOn,
+                                onCheckedChange = {
+                                    autoTurnOnCameraOn = it
+                                    presenter.updateAutoTurnOnCamera(it)
+                                }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(18.dp))
+                    }
+                }
 
                 itemsIndexed(screenState.groups) { _, group ->
                     ProfilePageBackground(modifier = Modifier.fillParentMaxWidth()) {

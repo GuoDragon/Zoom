@@ -33,11 +33,12 @@ class ScheduleMeetingPresenter(
                 requirePasscode = signal.passcode.isNotBlank(),
                 passcode = signal.passcode,
                 waitingRoom = signal.waitingRoomEnabled,
+                allowJoinBeforeHost = signal.allowJoinBeforeHost,
                 encryption = signal.encryption,
                 inviteeUserIds = signal.inviteeUserIds.toSet(),
                 continuousMeetingChat = true,
-                hostVideoOn = true,
-                participantVideoOn = true
+                hostVideoOn = signal.hostVideoOn,
+                participantVideoOn = signal.participantVideoOn
             )
         } ?: ScheduleMeetingDraft(
             meetingTitle = "${user.username}'s Zoom Meeting",
@@ -50,6 +51,7 @@ class ScheduleMeetingPresenter(
             requirePasscode = true,
             passcode = "d3L4Sh",
             waitingRoom = false,
+            allowJoinBeforeHost = true,
             encryption = "Enhanced",
             inviteeUserIds = emptySet(),
             continuousMeetingChat = true,
@@ -62,6 +64,7 @@ class ScheduleMeetingPresenter(
             repeatOptions = listOf(
                 "None",
                 "Every day",
+                "Every weekday",
                 "Every week",
                 "Every 2 weeks",
                 "Every month",
@@ -108,6 +111,9 @@ class ScheduleMeetingPresenter(
                 inviteeUserIds = draft.inviteeUserIds.toList(),
                 passcode = draft.passcode,
                 waitingRoomEnabled = draft.waitingRoom,
+                allowJoinBeforeHost = draft.allowJoinBeforeHost,
+                hostVideoOn = draft.hostVideoOn,
+                participantVideoOn = draft.participantVideoOn,
                 usePersonalMeetingId = draft.usePersonalMeetingId
             ) ?: DataRepository.addScheduledMeetingSignal(
                 topic = draft.meetingTitle,
@@ -120,6 +126,9 @@ class ScheduleMeetingPresenter(
                 inviteeUserIds = draft.inviteeUserIds.toList(),
                 passcode = draft.passcode,
                 waitingRoomEnabled = draft.waitingRoom,
+                allowJoinBeforeHost = draft.allowJoinBeforeHost,
+                hostVideoOn = draft.hostVideoOn,
+                participantVideoOn = draft.participantVideoOn,
                 usePersonalMeetingId = draft.usePersonalMeetingId
             )
         } else {
@@ -134,6 +143,9 @@ class ScheduleMeetingPresenter(
                 inviteeUserIds = draft.inviteeUserIds.toList(),
                 passcode = draft.passcode,
                 waitingRoomEnabled = draft.waitingRoom,
+                allowJoinBeforeHost = draft.allowJoinBeforeHost,
+                hostVideoOn = draft.hostVideoOn,
+                participantVideoOn = draft.participantVideoOn,
                 usePersonalMeetingId = draft.usePersonalMeetingId
             )
         }

@@ -244,6 +244,14 @@ fun ScheduleMeetingScreen(
                         }
                     )
                     ZoomInsetDivider()
+                    ZoomSettingSwitchRow(
+                        title = "Allow participants to join before host",
+                        checked = screenDraft.allowJoinBeforeHost,
+                        onCheckedChange = { enabled ->
+                            draft = draft?.copy(allowJoinBeforeHost = enabled)
+                        }
+                    )
+                    ZoomInsetDivider()
                     ZoomSettingValueRow(
                         title = "Encryption",
                         value = screenDraft.encryption,

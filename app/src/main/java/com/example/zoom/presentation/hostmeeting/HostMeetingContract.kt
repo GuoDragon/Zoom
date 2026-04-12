@@ -7,12 +7,22 @@ interface HostMeetingContract {
 
     interface Presenter {
         fun loadData()
-        fun prepareMeetingSession(usePersonalMeetingId: Boolean, videoOn: Boolean): String
+        fun prepareMeetingSession(
+            usePersonalMeetingId: Boolean,
+            videoOn: Boolean,
+            topic: String,
+            waitingRoomEnabled: Boolean,
+            allowJoinBeforeHost: Boolean
+        ): String
     }
 }
 
 data class HostMeetingUiState(
     val personalMeetingId: String,
+    val meetingTitle: String,
     val videoOn: Boolean,
-    val usePersonalMeetingId: Boolean
+    val audioConnectedByDefault: Boolean,
+    val usePersonalMeetingId: Boolean,
+    val waitingRoomEnabled: Boolean,
+    val allowJoinBeforeHost: Boolean
 )

@@ -8,6 +8,8 @@ object RuntimeSignalFileNames {
     const val RUNTIME_INSTANT_MEETINGS = "runtime_instant_meetings.json"
     const val RUNTIME_PROFILE_STATE = "runtime_profile_state.json"
     const val RUNTIME_DIRECT_MESSAGES = "runtime_direct_messages.json"
+    const val RUNTIME_MEETING_PREFERENCES = "runtime_meeting_preferences.json"
+    const val RUNTIME_CHAT_THREAD_STATES = "runtime_chat_thread_states.json"
     const val RUNTIME_META = "runtime_meta.json"
 }
 
@@ -31,12 +33,17 @@ object MeetingActionTypes {
     const val MEETING_MEDIA_STATE_CHANGED = "MEETING_MEDIA_STATE_CHANGED"
     const val MUTE_ALL = "MUTE_ALL"
     const val UNMUTE_ALL = "UNMUTE_ALL"
+    const val PARTICIPANT_UNMUTE = "PARTICIPANT_UNMUTE"
+    const val LOCK_MEETING = "LOCK_MEETING"
     const val INVITE_CONTACTS = "INVITE_CONTACTS"
     const val SCREEN_SHARE_STATUS_CHANGED = "SCREEN_SHARE_STATUS_CHANGED"
+    const val SCREEN_SHARE_PAUSED = "SCREEN_SHARE_PAUSED"
+    const val SCREEN_SHARE_RESUMED = "SCREEN_SHARE_RESUMED"
     const val RAISE_HAND = "RAISE_HAND"
     const val LOWER_HAND = "LOWER_HAND"
     const val EMOJI_REACTION = "EMOJI_REACTION"
     const val COPY_INVITE_LINK = "COPY_INVITE_LINK"
+    const val COPY_MEETING_NUMBER = "COPY_MEETING_NUMBER"
     const val SAFE_DRIVING_VOICE_NOTE = "SAFE_DRIVING_VOICE_NOTE"
 }
 

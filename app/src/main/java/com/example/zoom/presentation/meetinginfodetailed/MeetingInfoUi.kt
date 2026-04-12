@@ -102,6 +102,14 @@ fun MeetingInfoPage(
                         note = state.inviteLink
                     )
                 },
+                onCopyMeetingNumber = {
+                    copyToClipboard(context, state.meetingId)
+                    DataRepository.recordMeetingAction(
+                        actionType = MeetingActionTypes.COPY_MEETING_NUMBER,
+                        meetingId = DataRepository.getCurrentMeeting().meetingId,
+                        note = state.meetingId
+                    )
+                },
                 onShare = { shareMeetingInfo(context, buildMeetingShareText(state)) }
             )
         }
@@ -114,6 +122,7 @@ private fun MeetingInfoSheet(
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit,
     onCopyMeetingLink: () -> Unit,
+    onCopyMeetingNumber: () -> Unit,
     onShare: () -> Unit
 ) {
     Column(
@@ -192,6 +201,23 @@ private fun MeetingInfoSheet(
             ) {
                 Text(
                     text = "Copy meeting link",
+                    color = Color(0xFF4A90E2),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFF323840))
+                    .clickable(onClick = onCopyMeetingNumber)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    text = "Copy meeting number",
                     color = Color(0xFF4A90E2),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium

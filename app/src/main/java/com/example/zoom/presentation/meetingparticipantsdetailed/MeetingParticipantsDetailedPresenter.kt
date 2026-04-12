@@ -121,6 +121,26 @@ class MeetingParticipantsDetailedPresenter(
         }
     }
 
+    override fun askParticipantToUnmute(
+        participants: List<MeetingParticipantUi>,
+        meetingId: String,
+        targetUserId: String
+    ): List<MeetingParticipantUi> {
+        if (targetUserId.isBlank()) return participants
+        DataRepository.recordMeetingAction(
+            actionType = MeetingActionTypes.PARTICIPANT_UNMUTE,
+            meetingId = meetingId,
+            targetUserIds = listOf(targetUserId)
+        )
+        return participants.map { participant ->
+            if (participant.userId == targetUserId) {
+                participant.copy(isMuted = false)
+            } else {
+                participant
+            }
+        }
+    }
+
     override fun inviteContacts(
         meetingId: String,
         selectedContactIds: Set<String>

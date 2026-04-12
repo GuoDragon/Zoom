@@ -58,6 +58,7 @@ fun TeamChatScreen(
 ) {
     val chatItems = remember { mutableStateListOf<TeamChatThreadUi>() }
     var avatarInitial by remember { mutableStateOf("?") }
+    var unreadSessionCount by remember { mutableIntStateOf(0) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var showMoreOverlay by remember { mutableStateOf(false) }
     val tabs = listOf("All", "Mentions", "Chats", "Channels", "Meeting Chats", "Shared Spaces", "More")
@@ -75,6 +76,7 @@ fun TeamChatScreen(
                 avatarInitial = state.currentUserInitial
                 chatItems.clear()
                 chatItems.addAll(state.chats)
+                unreadSessionCount = state.unreadSessionCount
             }
         }
     }
@@ -138,6 +140,13 @@ fun TeamChatScreen(
                     )
                 }
             }
+
+            Text(
+                text = "Unread sessions: $unreadSessionCount",
+                color = Color(0xFF6D7785),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            )
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(chatItems) { chat ->
@@ -206,13 +215,32 @@ private fun ChatItem(
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = chat.preview,
-                fontSize = 13.sp,
-                color = Color.Gray,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = chat.preview,
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (chat.unreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .background(ZoomBlue, CircleShape)
+                            .padding(horizontal = 7.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = chat.unreadCount.toString(),
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
         }
     }
 }

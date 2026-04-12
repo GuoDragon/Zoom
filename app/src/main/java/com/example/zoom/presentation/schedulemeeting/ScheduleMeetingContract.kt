@@ -33,6 +33,7 @@ data class ScheduleMeetingDraft(
     val requirePasscode: Boolean,
     val passcode: String,
     val waitingRoom: Boolean,
+    val allowJoinBeforeHost: Boolean,
     val encryption: String,
     val inviteeUserIds: Set<String>,
     val continuousMeetingChat: Boolean,

@@ -14,14 +14,18 @@ class TeamChatPresenter(private val view: TeamChatContract.View) : TeamChatContr
             .firstOrNull()
             ?.uppercase()
             ?: "?"
+        val unreadByThreadId = DataRepository.getChatThreadStates()
+            .associate { it.threadId to it.unreadCount }
         val meetingThreads = DataRepository.getChatList().map { message ->
+            val threadId = "meeting_${message.meetingId}"
             TeamChatThreadUi(
-                threadId = message.meetingId,
+                threadId = threadId,
                 title = DataRepository.getMeetingById(message.meetingId)?.topic ?: message.senderName,
                 preview = message.content,
                 dateLabel = dateFormatter.format(Date(message.timestamp)),
                 avatarText = message.senderName.firstOrNull()?.uppercase() ?: "#",
-                sortTimestamp = message.timestamp
+                sortTimestamp = message.timestamp,
+                unreadCount = unreadByThreadId[threadId] ?: 0
             )
         }
         val directThreads = DataRepository.getDirectChatThreads().mapNotNull { signal ->
@@ -33,13 +37,16 @@ class TeamChatPresenter(private val view: TeamChatContract.View) : TeamChatContr
                 dateLabel = dateFormatter.format(Date(signal.timestamp)),
                 avatarText = partner.username.firstOrNull()?.uppercase() ?: "#",
                 sortTimestamp = signal.timestamp,
+                unreadCount = unreadByThreadId[signal.threadId] ?: 0,
                 directUserId = partner.userId
             )
         }
+        val allThreads = (directThreads + meetingThreads).sortedByDescending { it.sortTimestamp }
         view.showUiState(
             TeamChatUiState(
                 currentUserInitial = currentUserInitial,
-                chats = (directThreads + meetingThreads).sortedByDescending { it.sortTimestamp }
+                chats = allThreads,
+                unreadSessionCount = allThreads.count { it.unreadCount > 0 }
             )
         )
     }

@@ -6,6 +6,7 @@ import com.example.zoom.common.constants.JoinHistoryActionTypes
 import com.example.zoom.common.constants.MeetingActionTypes
 import com.example.zoom.common.constants.RuntimeSignalFileNames
 import com.example.zoom.common.constants.RuntimeSignalPrefixes
+import com.example.zoom.model.ChatThreadStateSignal
 import com.example.zoom.model.DirectMessageSignal
 import com.example.zoom.model.InstantMeetingSessionSignal
 import com.example.zoom.model.JoinMeetingHistoryAction
@@ -13,6 +14,7 @@ import com.example.zoom.model.JoinMeetingHistoryEntry
 import com.example.zoom.model.JoinMeetingHistorySignal
 import com.example.zoom.model.Meeting
 import com.example.zoom.model.MeetingActionSignal
+import com.example.zoom.model.MeetingPreferencesSignal
 import com.example.zoom.model.Message
 import com.example.zoom.model.RuntimeSignalMeta
 import com.example.zoom.model.ScheduledMeetingSignal
@@ -32,12 +34,17 @@ import java.time.ZonedDateTime
 object DataRepository {
     private const val TAG = "DataRepository"
     private const val CURRENT_USER_ID = "user001"
+    private const val AMBER_CAMPBELL_USER_ID = "user032"
     private const val DEFAULT_CURRENT_MEETING_ID = "mtg016"
     private const val PERSONAL_MEETING_NUMBER = "9948881080"
+    private const val TASK4_JOIN_MEETING_NUMBER = "389257198"
+    private const val TASK9_SEED_MEETING_TOPIC = "[GUIA] [GUIA-07] Project Sync"
     private const val DEFAULT_MEETING_PASSCODE = "qwjU5X"
     private const val AUTOMATION_TIME_ZONE_ID = "Asia/Shanghai"
     private const val RUNTIME_SCHEMA_VERSION = 1
     private const val AUTOMATION_SEED_MEETING_COUNT = 3
+    private const val THREAD_TYPE_DIRECT = "DIRECT"
+    private const val THREAD_TYPE_MEETING = "MEETING"
 
     private data class ActiveScreenShareSession(
         val meetingId: String,
@@ -60,6 +67,8 @@ object DataRepository {
     private var runtimeJoinHistoryEntries: MutableList<JoinMeetingHistoryEntry> = mutableListOf()
     private var runtimeJoinHistoryActions: MutableList<JoinMeetingHistoryAction> = mutableListOf()
     private var runtimeMeetingActions: MutableList<MeetingActionSignal> = mutableListOf()
+    private var runtimeChatThreadStates: MutableList<ChatThreadStateSignal> = mutableListOf()
+    private lateinit var meetingPreferencesSignal: MeetingPreferencesSignal
     private lateinit var profileSignal: UserProfileSignal
 
     private var activeScreenShareSession: ActiveScreenShareSession? = null
@@ -123,6 +132,8 @@ object DataRepository {
         RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY to runtimeJoinHistoryFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS to runtimeMeetingActionFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_PROFILE_STATE to runtimeProfileStateFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_MEETING_PREFERENCES to runtimeMeetingPreferencesFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_CHAT_THREAD_STATES to runtimeChatThreadStateFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_META to runtimeMetaFile().absolutePath
     )
 
@@ -131,6 +142,27 @@ object DataRepository {
     fun getCurrentUser(): User = mergeUserProfile(users.first { it.userId == CURRENT_USER_ID })
 
     fun getUserProfileSignal(): UserProfileSignal = profileSignal
+
+    fun getMeetingPreferencesSignal(): MeetingPreferencesSignal = meetingPreferencesSignal
+
+    fun getChatThreadStates(): List<ChatThreadStateSignal> = runtimeChatThreadStates.toList()
+
+    fun getUnreadDirectThreadCount(): Int {
+        return runtimeChatThreadStates.count { it.threadType == THREAD_TYPE_DIRECT && it.unreadCount > 0 }
+    }
+
+    fun updateMeetingPreferences(
+        autoConnectAudioOn: Boolean = meetingPreferencesSignal.autoConnectAudioOn,
+        autoTurnOnCameraOn: Boolean = meetingPreferencesSignal.autoTurnOnCameraOn
+    ) {
+        meetingPreferencesSignal = meetingPreferencesSignal.copy(
+            autoConnectAudioOn = autoConnectAudioOn,
+            autoTurnOnCameraOn = autoTurnOnCameraOn,
+            updatedAt = System.currentTimeMillis()
+        )
+        persistMeetingPreferencesSignal()
+        bumpRuntimeDataVersion()
+    }
 
     fun updateCurrentUserAvailability(availability: String, statusText: String = profileSignal.statusText) {
         profileSignal = profileSignal.copy(
@@ -198,9 +230,10 @@ object DataRepository {
     fun sendDirectMessage(partnerUserId: String, content: String): DirectMessageSignal {
         val currentUser = getCurrentUser()
         val timestamp = System.currentTimeMillis()
+        val threadId = directThreadId(partnerUserId)
         val signal = DirectMessageSignal(
             messageId = "${RuntimeSignalPrefixes.DIRECT_MESSAGE_ID_PREFIX}${timestamp}_${runtimeDirectMessages.size + 1}",
-            threadId = directThreadId(partnerUserId),
+            threadId = threadId,
             partnerUserId = partnerUserId,
             senderId = currentUser.userId,
             senderName = currentUser.username,
@@ -208,7 +241,15 @@ object DataRepository {
             timestamp = timestamp
         )
         runtimeDirectMessages.add(signal)
+        upsertChatThreadState(
+            threadId = threadId,
+            threadType = THREAD_TYPE_DIRECT,
+            partnerUserId = partnerUserId,
+            lastMessageAt = timestamp,
+            outgoing = true
+        )
         persistRuntimeDirectMessages()
+        persistRuntimeChatThreadStates()
         bumpRuntimeDataVersion()
         return signal
     }
@@ -305,7 +346,13 @@ object DataRepository {
             .mapNotNull(::getUserById)
     }
 
-    fun prepareHostMeetingSession(usePersonalMeetingId: Boolean, videoOn: Boolean): String {
+    fun prepareHostMeetingSession(
+        usePersonalMeetingId: Boolean,
+        videoOn: Boolean,
+        topic: String? = null,
+        waitingRoomEnabled: Boolean = false,
+        allowJoinBeforeHost: Boolean = true
+    ): String {
         val currentUser = getCurrentUser()
         val createdAt = System.currentTimeMillis()
         val meetingNumber = if (usePersonalMeetingId) {
@@ -313,13 +360,17 @@ object DataRepository {
         } else {
             generateMeetingNumber(createdAt, instantMeetingSessions.size + if (videoOn) 1 else 0)
         }
+        val resolvedTopic = topic?.trim().takeUnless { it.isNullOrBlank() }
+            ?: "${currentUser.username}'s Zoom Meeting"
         val signal = InstantMeetingSessionSignal(
             signalId = "${RuntimeSignalPrefixes.INSTANT_MEETING_ID_PREFIX}${createdAt}_${instantMeetingSessions.size + 1}",
             meetingNumber = meetingNumber,
-            topic = "${currentUser.username}'s Zoom Meeting",
+            topic = resolvedTopic,
             source = "HOST",
             participantIds = listOf(currentUser.userId),
             passcode = DEFAULT_MEETING_PASSCODE,
+            waitingRoomEnabled = waitingRoomEnabled,
+            allowJoinBeforeHost = allowJoinBeforeHost,
             usePersonalMeetingId = usePersonalMeetingId,
             createdAt = createdAt
         )
@@ -333,9 +384,15 @@ object DataRepository {
     fun prepareJoinMeetingSession(meetingNumber: String, title: String? = null): String {
         val currentUser = getCurrentUser()
         val createdAt = System.currentTimeMillis()
-        val fallbackParticipantIds = getContacts()
-            .take(5)
-            .map { it.userId }
+        val defaultFallbackParticipantIds = getContacts().map { it.userId }
+        val fallbackParticipantIds = if (meetingNumber == TASK4_JOIN_MEETING_NUMBER) {
+            // Ensure task 4's target participant can appear in the meeting member list.
+            (listOf(AMBER_CAMPBELL_USER_ID) + defaultFallbackParticipantIds)
+                .distinct()
+                .take(5)
+        } else {
+            defaultFallbackParticipantIds.take(5)
+        }
         val signal = InstantMeetingSessionSignal(
             signalId = "${RuntimeSignalPrefixes.INSTANT_MEETING_ID_PREFIX}${createdAt}_${instantMeetingSessions.size + 1}",
             meetingNumber = meetingNumber,
@@ -364,6 +421,9 @@ object DataRepository {
         inviteeUserIds: List<String>,
         passcode: String,
         waitingRoomEnabled: Boolean,
+        allowJoinBeforeHost: Boolean = true,
+        hostVideoOn: Boolean = true,
+        participantVideoOn: Boolean = true,
         usePersonalMeetingId: Boolean
     ): ScheduledMeetingSignal {
         val createdAt = System.currentTimeMillis()
@@ -380,6 +440,9 @@ object DataRepository {
             inviteeUserIds = inviteeUserIds.distinct(),
             passcode = passcode,
             waitingRoomEnabled = waitingRoomEnabled,
+            allowJoinBeforeHost = allowJoinBeforeHost,
+            hostVideoOn = hostVideoOn,
+            participantVideoOn = participantVideoOn,
             usePersonalMeetingId = usePersonalMeetingId,
             createdAt = createdAt
         )
@@ -401,6 +464,9 @@ object DataRepository {
         inviteeUserIds: List<String>,
         passcode: String,
         waitingRoomEnabled: Boolean,
+        allowJoinBeforeHost: Boolean = true,
+        hostVideoOn: Boolean = true,
+        participantVideoOn: Boolean = true,
         usePersonalMeetingId: Boolean
     ): ScheduledMeetingSignal? {
         val index = scheduledMeetingSignals.indexOfFirst { it.signalId == signalId }
@@ -417,6 +483,9 @@ object DataRepository {
             inviteeUserIds = inviteeUserIds.distinct(),
             passcode = passcode,
             waitingRoomEnabled = waitingRoomEnabled,
+            allowJoinBeforeHost = allowJoinBeforeHost,
+            hostVideoOn = hostVideoOn,
+            participantVideoOn = participantVideoOn,
             usePersonalMeetingId = usePersonalMeetingId,
             meetingNumber = if (usePersonalMeetingId) PERSONAL_MEETING_NUMBER else original.meetingNumber
         )
@@ -452,6 +521,7 @@ object DataRepository {
     fun addRuntimeChatMessage(meetingId: String, content: String): Message {
         val currentUser = getCurrentUser()
         val timestamp = System.currentTimeMillis()
+        val threadId = "meeting_$meetingId"
         val message = Message(
             messageId = "${RuntimeSignalPrefixes.RUNTIME_MESSAGE_ID_PREFIX}${timestamp}_${runtimeChatMessages.size + 1}",
             meetingId = meetingId,
@@ -461,7 +531,15 @@ object DataRepository {
             timestamp = timestamp
         )
         runtimeChatMessages.add(message)
+        upsertChatThreadState(
+            threadId = threadId,
+            threadType = THREAD_TYPE_MEETING,
+            meetingId = meetingId,
+            lastMessageAt = timestamp,
+            outgoing = true
+        )
         persistRuntimeChatMessages()
+        persistRuntimeChatThreadStates()
         bumpRuntimeDataVersion()
         return message
     }
@@ -681,9 +759,15 @@ object DataRepository {
         instantMeetingSessions = mutableListOf()
         runtimeChatMessages = mutableListOf()
         runtimeDirectMessages = mutableListOf()
+        runtimeChatThreadStates = mutableListOf()
         runtimeJoinHistoryEntries = defaultJoinHistoryEntries()
         runtimeJoinHistoryActions = mutableListOf()
         runtimeMeetingActions = mutableListOf()
+        meetingPreferencesSignal = MeetingPreferencesSignal(
+            autoConnectAudioOn = true,
+            autoTurnOnCameraOn = false,
+            updatedAt = System.currentTimeMillis()
+        )
         profileSignal = UserProfileSignal(
             displayName = currentUserAsset().username,
             availability = "Available",
@@ -697,8 +781,10 @@ object DataRepository {
         persistRuntimeInstantMeetings()
         persistRuntimeChatMessages()
         persistRuntimeDirectMessages()
+        persistRuntimeChatThreadStates()
         persistRuntimeJoinHistorySignal()
         persistRuntimeMeetingActions()
+        persistMeetingPreferencesSignal()
         persistProfileSignal()
         persistRuntimeMeta()
         bumpRuntimeDataVersion()
@@ -761,7 +847,7 @@ object DataRepository {
             ),
             buildAutomationSeedMeeting(
                 index = 3,
-                topic = "May Planning Review",
+                topic = TASK9_SEED_MEETING_TOPIC,
                 startDate = nextMayFirst,
                 startTime = LocalTime.of(9, 0),
                 durationMinutes = 45,
@@ -797,6 +883,9 @@ object DataRepository {
             inviteeUserIds = emptyList(),
             passcode = DEFAULT_MEETING_PASSCODE,
             waitingRoomEnabled = false,
+            allowJoinBeforeHost = true,
+            hostVideoOn = true,
+            participantVideoOn = true,
             usePersonalMeetingId = false,
             createdAt = signalCreatedAt
         )
@@ -876,6 +965,14 @@ object DataRepository {
         )
     }
 
+    private fun persistRuntimeChatThreadStates() {
+        persistJson(
+            file = runtimeChatThreadStateFile(),
+            payload = runtimeChatThreadStates,
+            label = RuntimeSignalFileNames.RUNTIME_CHAT_THREAD_STATES
+        )
+    }
+
     private fun persistRuntimeJoinHistorySignal() {
         val payload = JoinMeetingHistorySignal(
             entries = runtimeJoinHistoryEntries,
@@ -901,6 +998,14 @@ object DataRepository {
             file = runtimeProfileStateFile(),
             payload = profileSignal,
             label = RuntimeSignalFileNames.RUNTIME_PROFILE_STATE
+        )
+    }
+
+    private fun persistMeetingPreferencesSignal() {
+        persistJson(
+            file = runtimeMeetingPreferencesFile(),
+            payload = meetingPreferencesSignal,
+            label = RuntimeSignalFileNames.RUNTIME_MEETING_PREFERENCES
         )
     }
 
@@ -955,6 +1060,35 @@ object DataRepository {
         return normalized.takeLast(9)
     }
 
+    private fun upsertChatThreadState(
+        threadId: String,
+        threadType: String,
+        partnerUserId: String = "",
+        meetingId: String = "",
+        lastMessageAt: Long,
+        outgoing: Boolean
+    ) {
+        val index = runtimeChatThreadStates.indexOfFirst { it.threadId == threadId }
+        if (index >= 0) {
+            val original = runtimeChatThreadStates[index]
+            runtimeChatThreadStates[index] = original.copy(
+                unreadCount = if (outgoing) original.unreadCount else original.unreadCount + 1,
+                lastMessageAt = lastMessageAt
+            )
+            return
+        }
+        runtimeChatThreadStates.add(
+            ChatThreadStateSignal(
+                threadId = threadId,
+                threadType = threadType,
+                partnerUserId = partnerUserId,
+                meetingId = meetingId,
+                unreadCount = if (outgoing) 0 else 1,
+                lastMessageAt = lastMessageAt
+            )
+        )
+    }
+
     private fun directThreadId(partnerUserId: String): String = "direct_$partnerUserId"
 
     private fun runtimeScheduledMeetingFile(): File {
@@ -973,6 +1107,10 @@ object DataRepository {
         return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_DIRECT_MESSAGES)
     }
 
+    private fun runtimeChatThreadStateFile(): File {
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_CHAT_THREAD_STATES)
+    }
+
     private fun runtimeJoinHistoryFile(): File {
         return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY)
     }
@@ -983,6 +1121,10 @@ object DataRepository {
 
     private fun runtimeProfileStateFile(): File {
         return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_PROFILE_STATE)
+    }
+
+    private fun runtimeMeetingPreferencesFile(): File {
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_MEETING_PREFERENCES)
     }
 
     private fun runtimeMetaFile(): File {

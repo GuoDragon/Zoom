@@ -1,5 +1,8 @@
 package com.example.zoom.presentation.schedulemeetingdetailed
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
@@ -46,9 +50,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.zoom.common.constants.MeetingActionTypes
+import com.example.zoom.data.DataRepository
 import com.example.zoom.presentation.schedulemeeting.ScheduleMeetingInviteeOption
 import com.example.zoom.ui.components.ZoomInsetDivider
 import com.example.zoom.ui.components.ZoomPageSurface
@@ -77,6 +84,7 @@ fun ScheduleMeetingDetailedScreen(
     var inviteePopupPage by remember { mutableStateOf(ScheduleInvitePopupPage.MENU) }
     var inviteeSearchQuery by remember { mutableStateOf("") }
     var inviteeWorkingSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val context = LocalContext.current
 
     val view = remember {
         object : ScheduleMeetingDetailedContract.View {
@@ -189,6 +197,12 @@ fun ScheduleMeetingDetailedScreen(
                         value = state.waitingRoomLabel,
                         showChevron = false
                     )
+                    ZoomInsetDivider()
+                    ZoomSettingValueRow(
+                        title = "Allow join before host",
+                        value = state.allowJoinBeforeHostLabel,
+                        showChevron = false
+                    )
                 }
             }
 
@@ -223,6 +237,22 @@ fun ScheduleMeetingDetailedScreen(
                         }
                     )
                 }
+                ScheduleMeetingActionButton(
+                    icon = Icons.Default.ContentCopy,
+                    label = "Copy link",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    onClick = {
+                        val inviteLink = DataRepository.getMeetingInviteLink(state.meetingId)
+                        copyTextToClipboard(context, "Zoom Invite Link", inviteLink)
+                        DataRepository.recordMeetingAction(
+                            actionType = MeetingActionTypes.COPY_INVITE_LINK,
+                            meetingId = state.meetingId,
+                            note = inviteLink
+                        )
+                    }
+                )
             }
 
             item {
@@ -325,6 +355,11 @@ fun ScheduleMeetingDetailedScreen(
             }
         )
     }
+}
+
+private fun copyTextToClipboard(context: Context, label: String, text: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
 }
 
 @Composable

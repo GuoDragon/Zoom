@@ -279,13 +279,19 @@ fun ZoomNavGraph(
                     navController.navigate(Screen.ScheduleMeeting.createRoute(selectedMeetingId))
                 },
                 onStartClick = { selectedMeetingId ->
+                    val scheduledSignal = DataRepository.getScheduledMeetingSignalById(selectedMeetingId)
+                    val preferences = DataRepository.getMeetingPreferencesSignal()
                     navController.navigate(
                         Screen.MeetingPreview.createRoute(
                             selectedMeetingId,
                             MeetingSessionConfig(
                                 microphoneOn = false,
-                                cameraOn = false,
-                                audioOption = MeetingAudioOption.WifiOrCellular
+                                cameraOn = scheduledSignal?.hostVideoOn ?: preferences.autoTurnOnCameraOn,
+                                audioOption = if (preferences.autoConnectAudioOn) {
+                                    MeetingAudioOption.WifiOrCellular
+                                } else {
+                                    MeetingAudioOption.NoAudio
+                                }
                             )
                         )
                     )
@@ -311,13 +317,19 @@ fun ZoomNavGraph(
                 meetingId = meetingId,
                 onBackClick = { navController.popBackStack() },
                 onStartClick = { selectedMeetingId ->
+                    val scheduledSignal = DataRepository.getScheduledMeetingSignalById(selectedMeetingId)
+                    val preferences = DataRepository.getMeetingPreferencesSignal()
                     navController.navigate(
                         Screen.MeetingPreview.createRoute(
                             selectedMeetingId,
                             MeetingSessionConfig(
                                 microphoneOn = false,
-                                cameraOn = false,
-                                audioOption = MeetingAudioOption.WifiOrCellular
+                                cameraOn = scheduledSignal?.hostVideoOn ?: preferences.autoTurnOnCameraOn,
+                                audioOption = if (preferences.autoConnectAudioOn) {
+                                    MeetingAudioOption.WifiOrCellular
+                                } else {
+                                    MeetingAudioOption.NoAudio
+                                }
                             )
                         )
                     )

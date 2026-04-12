@@ -13,6 +13,9 @@ data class ScheduledMeetingSignal(
     val inviteeUserIds: List<String>,
     val passcode: String,
     val waitingRoomEnabled: Boolean,
+    val allowJoinBeforeHost: Boolean = true,
+    val hostVideoOn: Boolean = true,
+    val participantVideoOn: Boolean = true,
     val usePersonalMeetingId: Boolean,
     val createdAt: Long
 )

@@ -312,6 +312,20 @@ fun MeetingDetailedScreen(
                     onDismiss = { activeMeetingMorePage = null },
                     onShareScreenChanged = { enabled ->
                         DataRepository.setCurrentMeetingScreenShareEnabled(enabled)
+                    },
+                    onPauseShare = {
+                        DataRepository.recordMeetingAction(
+                            actionType = MeetingActionTypes.SCREEN_SHARE_PAUSED,
+                            meetingId = meetingId,
+                            note = "Screen share paused"
+                        )
+                    },
+                    onResumeShare = {
+                        DataRepository.recordMeetingAction(
+                            actionType = MeetingActionTypes.SCREEN_SHARE_RESUMED,
+                            meetingId = meetingId,
+                            note = "Screen share resumed"
+                        )
                     }
                 )
                 MeetingMorePage.NOTES -> MeetingNotesScreen(
@@ -321,7 +335,16 @@ fun MeetingDetailedScreen(
                     onClose = { activeMeetingMorePage = null }
                 )
                 MeetingMorePage.HOST_TOOLS -> MeetingHostToolsOverlay(
-                    onDismiss = { activeMeetingMorePage = null }
+                    onDismiss = { activeMeetingMorePage = null },
+                    onToolSelected = { label ->
+                        if (label == "Security") {
+                            DataRepository.recordMeetingAction(
+                                actionType = MeetingActionTypes.LOCK_MEETING,
+                                meetingId = meetingId,
+                                note = "Locked from Host tools"
+                            )
+                        }
+                    }
                 )
                 MeetingMorePage.SETTINGS -> MeetingSettingsOverlay(
                     onDismiss = { activeMeetingMorePage = null }
