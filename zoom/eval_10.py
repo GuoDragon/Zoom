@@ -12,6 +12,7 @@ def verify_join_994488281_with_camera(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

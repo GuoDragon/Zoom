@@ -12,6 +12,7 @@ def verify_schedule_tomorrow_1900_with_derek_and_brittany(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

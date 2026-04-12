@@ -12,6 +12,7 @@ def verify_host_personal_meeting(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

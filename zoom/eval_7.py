@@ -12,6 +12,7 @@ def verify_send_im_lcl_in_new_meeting(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

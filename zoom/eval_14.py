@@ -12,6 +12,7 @@ def verify_upcoming_schedule_count_answer(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

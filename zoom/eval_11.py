@@ -12,6 +12,7 @@ def verify_unmute_all_389257198(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

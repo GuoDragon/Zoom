@@ -12,6 +12,7 @@ def verify_media_enabled_before_host(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

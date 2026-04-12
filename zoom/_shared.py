@@ -20,12 +20,20 @@ RUNTIME_CHAT_MESSAGES_FILE = "runtime_chat_messages.json"
 RUNTIME_DIRECT_MESSAGES_FILE = "runtime_direct_messages.json"
 RUNTIME_MEETING_ACTIONS_FILE = "runtime_meeting_actions.json"
 RUNTIME_PROFILE_STATE_FILE = "runtime_profile_state.json"
+RUNTIME_MEETING_PREFERENCES_FILE = "runtime_meeting_preferences.json"
+RUNTIME_CHAT_THREAD_STATES_FILE = "runtime_chat_thread_states.json"
 
 ACTION_INVITE_CONTACTS = "INVITE_CONTACTS"
 ACTION_SCREEN_SHARE_STATUS_CHANGED = "SCREEN_SHARE_STATUS_CHANGED"
+ACTION_SCREEN_SHARE_PAUSED = "SCREEN_SHARE_PAUSED"
+ACTION_SCREEN_SHARE_RESUMED = "SCREEN_SHARE_RESUMED"
 ACTION_SAFE_DRIVING_VOICE_NOTE = "SAFE_DRIVING_VOICE_NOTE"
 ACTION_COPY_INVITE_LINK = "COPY_INVITE_LINK"
+ACTION_COPY_MEETING_NUMBER = "COPY_MEETING_NUMBER"
+ACTION_MUTE_ALL = "MUTE_ALL"
 ACTION_UNMUTE_ALL = "UNMUTE_ALL"
+ACTION_PARTICIPANT_UNMUTE = "PARTICIPANT_UNMUTE"
+ACTION_LOCK_MEETING = "LOCK_MEETING"
 ACTION_RAISE_HAND = "RAISE_HAND"
 ACTION_LOWER_HAND = "LOWER_HAND"
 ACTION_EMOJI_REACTION = "EMOJI_REACTION"
@@ -123,6 +131,18 @@ def _meeting_actions(task_id: int, device_id: str | None, backup_dir: str | None
 
 def _profile_state(task_id: int, device_id: str | None, backup_dir: str | None) -> dict:
     return _as_dict(_read_runtime_json(task_id, RUNTIME_PROFILE_STATE_FILE, device_id, backup_dir))
+
+
+def _meeting_preferences(task_id: int, device_id: str | None, backup_dir: str | None) -> dict:
+    return _as_dict(_read_runtime_json(task_id, RUNTIME_MEETING_PREFERENCES_FILE, device_id, backup_dir))
+
+
+def _chat_thread_states(task_id: int, device_id: str | None, backup_dir: str | None) -> list[dict]:
+    return [
+        item
+        for item in _as_list(_read_runtime_json(task_id, RUNTIME_CHAT_THREAD_STATES_FILE, device_id, backup_dir))
+        if isinstance(item, dict)
+    ]
 
 
 def _append_named_strings(source: dict, keys: tuple[str, ...], chunks: list[str]) -> None:
@@ -247,6 +267,30 @@ def _tomorrow_local_date() -> date:
     return datetime.now(SHANGHAI_TZ).date() + timedelta(days=1)
 
 
+def _day_after_tomorrow_local_date() -> date:
+    return datetime.now(SHANGHAI_TZ).date() + timedelta(days=2)
+
+
+def _upcoming_unstarted_scheduled_meetings(
+    task_id: int,
+    device_id: str | None,
+    backup_dir: str | None,
+    days: int | None = None,
+) -> list[dict]:
+    now = datetime.now(SHANGHAI_TZ)
+    meetings = []
+    for meeting in _scheduled_meetings(task_id, device_id, backup_dir):
+        start_at = _to_local_datetime(meeting.get("startTime"))
+        if start_at is None:
+            continue
+        if start_at <= now:
+            continue
+        if days is not None and start_at > now + timedelta(days=days):
+            continue
+        meetings.append(meeting)
+    return meetings
+
+
 def _find_latest(records: list[dict], predicate) -> dict | None:
     for item in reversed(records):
         if predicate(item):
@@ -285,6 +329,19 @@ def _find_instant_session(task_id: int, device_id: str | None, backup_dir: str |
     return _find_latest(sessions, predicate)
 
 
+def _find_scheduled_meeting(
+    task_id: int,
+    device_id: str | None,
+    backup_dir: str | None,
+    predicate,
+) -> dict | None:
+    return _find_latest(_scheduled_meetings(task_id, device_id, backup_dir), predicate)
+
+
+def _meeting_topic_contains(meeting: dict, keyword: str) -> bool:
+    return _normalize_text(keyword) in _normalize_text(str(meeting.get("topic", "")))
+
+
 def _find_meeting_action(task_id: int, device_id: str | None, backup_dir: str | None, *, action_type: str, meeting_id: str | None = None, meeting_number: str | None = None, required_target_ids: list[str] | None = None, emoji: str | None = None, note_keywords: list[str] | None = None, screen_sharing_enabled: bool | None = None, microphone_on: bool | None = None, camera_on: bool | None = None, audio_option: str | None = None, exit_action: str | None = None, media_change_source: str | None = None) -> dict | None:
     required_targets = {str(target_id) for target_id in (required_target_ids or []) if target_id}
     actions = _meeting_actions(task_id, device_id, backup_dir)
@@ -318,6 +375,50 @@ def _find_meeting_action(task_id: int, device_id: str | None, backup_dir: str | 
         return True
 
     return _find_latest(actions, predicate)
+
+
+def _actions_for_meeting(task_id: int, device_id: str | None, backup_dir: str | None, meeting_id: str) -> list[dict]:
+    if not meeting_id:
+        return []
+    return [
+        action
+        for action in _meeting_actions(task_id, device_id, backup_dir)
+        if str(action.get("meetingId", "")) == meeting_id
+    ]
+
+
+def _action_timestamp_ms(action: dict) -> int:
+    try:
+        return int(action.get("occurredAt", 0))
+    except Exception:
+        return 0
+
+
+def _has_screen_share_resume_evidence(task_id: int, device_id: str | None, backup_dir: str | None, meeting_id: str) -> bool:
+    actions = _actions_for_meeting(task_id, device_id, backup_dir, meeting_id)
+    if not actions:
+        return False
+
+    pause_action = _find_latest(actions, lambda item: str(item.get("actionType", "")) == ACTION_SCREEN_SHARE_PAUSED)
+    if pause_action is None:
+        return False
+    pause_ts = _action_timestamp_ms(pause_action)
+
+    explicit_resume = any(
+        str(action.get("actionType", "")) == ACTION_SCREEN_SHARE_RESUMED and _action_timestamp_ms(action) >= pause_ts
+        for action in actions
+    )
+    if explicit_resume:
+        return True
+
+    # Some app builds only emit "SCREEN_SHARE_STATUS_CHANGED=true" when resuming after pause.
+    implicit_resume = any(
+        str(action.get("actionType", "")) == ACTION_SCREEN_SHARE_STATUS_CHANGED
+        and action.get("screenSharingEnabled") is True
+        and _action_timestamp_ms(action) > pause_ts
+        for action in actions
+    )
+    return implicit_resume
 
 
 def _resolve_effective_media_state(
@@ -383,14 +484,30 @@ def _chat_message_exists(task_id: int, device_id: str | None, backup_dir: str | 
     return False
 
 
-def _direct_message_exists(task_id: int, device_id: str | None, backup_dir: str | None, *, partner_user_id: str, keyword_groups: list[list[str]]) -> bool:
+def _direct_message_exists(
+    task_id: int,
+    device_id: str | None,
+    backup_dir: str | None,
+    *,
+    partner_user_id: str,
+    keyword_groups: list[list[str]] | None = None,
+    content_exact: str | None = None,
+    require_link: bool = False,
+) -> bool:
+    normalized_exact = _normalize_text(content_exact) if content_exact is not None else None
     for message in reversed(_direct_messages(task_id, device_id, backup_dir)):
         if str(message.get("senderId", "")) != CURRENT_USER_ID:
             continue
         if str(message.get("partnerUserId", "")) != str(partner_user_id):
             continue
-        if _text_matches_groups(str(message.get("content", "")), keyword_groups):
-            return True
+        content = str(message.get("content", ""))
+        if normalized_exact is not None and _normalize_text(content) != normalized_exact:
+            continue
+        if keyword_groups and not _text_matches_groups(content, keyword_groups):
+            continue
+        if require_link and "https://zoom.us/j/" not in content.lower():
+            continue
+        return True
     return False
 
 
@@ -400,130 +517,417 @@ def evaluate_task(task_id: int, result=None, device_id=None, backup_dir=None, **
     derek_id = _find_user_id("Derek Stewart")
     brittany_id = _find_user_id("Brittany Evans")
     natalie_id = _find_user_id("Natalie Cox")
-    all_contact_ids = fixtures["contact_ids"]
+    tomorrow = _tomorrow_local_date()
+    day_after_tomorrow = _day_after_tomorrow_local_date()
+    task_context = kwargs.get("task_context")
+    task_context = task_context if isinstance(task_context, dict) else {}
 
     if task_id == 1:
-        return _find_instant_session(task_id, device_id, backup_dir, source="HOST", meeting_number=PERSONAL_MEETING_NUMBER, use_personal_meeting_id=True) is not None
+        host_session = _find_instant_session(
+            task_id,
+            device_id,
+            backup_dir,
+            source="HOST",
+            meeting_number=PERSONAL_MEETING_NUMBER,
+            use_personal_meeting_id=True,
+        )
+        meeting_id = str(host_session.get("signalId", "")) if host_session else ""
+        return bool(
+            host_session
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_STARTED, meeting_id=meeting_id, microphone_on=False, camera_on=True)
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_COPY_INVITE_LINK, meeting_id=meeting_id)
+            and _chat_message_exists(task_id, device_id, backup_dir, meeting_ids={meeting_id}, content_exact="Welcome to [GUIA-01]")
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=meeting_id, exit_action="LEAVE_SELF")
+        )
 
     if task_id == 2:
-        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST")
-        return bool(host_session and amber_id and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_INVITE_CONTACTS, meeting_id=str(host_session.get("signalId", "")), required_target_ids=[amber_id]))
-
-    if task_id == 3:
-        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST")
-        host_meeting_id = str(host_session.get("signalId", "")) if host_session else ""
-        return bool(
-            host_session
-            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_STARTED, meeting_id=host_meeting_id)
-            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_COPY_INVITE_LINK, meeting_id=host_meeting_id)
-            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=host_meeting_id, exit_action="LEAVE_SELF")
-        )
-
-    if task_id == 4:
-        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST")
-        return bool(host_session and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_SCREEN_SHARE_STATUS_CHANGED, meeting_id=str(host_session.get("signalId", "")), screen_sharing_enabled=True))
-
-    if task_id == 5:
-        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST")
-        host_meeting_id = str(host_session.get("signalId", "")) if host_session else ""
-        return bool(
-            host_session
-            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_STARTED, meeting_id=host_meeting_id)
-            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_SAFE_DRIVING_VOICE_NOTE, meeting_id=host_meeting_id, note_keywords=["hello"])
-            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=host_meeting_id)
-        )
-
-    if task_id == 6:
+        required_invitees = {amber_id, brittany_id} - {""}
         host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST", use_personal_meeting_id=False)
-        host_meeting_id = str(host_session.get("signalId", "")) if host_session else ""
-        media_state = _resolve_effective_media_state(task_id, device_id, backup_dir, host_meeting_id)
+        meeting_id = str(host_session.get("signalId", "")) if host_session else ""
         return bool(
             host_session
-            and _media_state_matches(
-                media_state,
-                microphone_on=True,
-                camera_on=True,
-                audio_option="none",
-            )
-        )
-
-    if task_id == 7:
-        host_sessions = {str(session.get("signalId")) for session in _instant_meetings(task_id, device_id, backup_dir) if str(session.get("source", "")) == "HOST" and session.get("signalId")}
-        return bool(host_sessions and _chat_message_exists(task_id, device_id, backup_dir, meeting_ids=host_sessions, content_exact="I'm lcl."))
-
-    if task_id == 8:
-        return str(_profile_state(task_id, device_id, backup_dir).get("availability", "")) == "Busy"
-
-    if task_id == 9:
-        return str(_profile_state(task_id, device_id, backup_dir).get("displayName", "")) == "Liu Chenlong"
-
-    if task_id == 10:
-        join_session = _find_instant_session(task_id, device_id, backup_dir, source="JOIN", meeting_number="994488281")
-        join_meeting_id = str(join_session.get("signalId", "")) if join_session else ""
-        media_state = _resolve_effective_media_state(task_id, device_id, backup_dir, join_meeting_id)
-        return bool(
-            join_session
-            and _media_state_matches(
-                media_state,
-                camera_on=True,
-            )
-        )
-
-    if task_id == 11:
-        return _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_UNMUTE_ALL, meeting_number="389257198") is not None
-
-    if task_id == 12:
-        return all((_find_meeting_action(task_id, device_id, backup_dir, action_type=action_type, meeting_number="927650367", emoji=emoji) is not None) for action_type, emoji in ((ACTION_RAISE_HAND, None), (ACTION_LOWER_HAND, None), (ACTION_EMOJI_REACTION, "\U0001f44d")))
-
-    if task_id == 13:
-        return _result_contains_number(result, len(all_contact_ids))
-
-    if task_id == 14:
-        return _result_contains_number(result, 3)
-
-    if task_id == 15:
-        required_invitees = {derek_id, brittany_id} - {""}
-        tomorrow = _tomorrow_local_date()
-        return _find_latest(_scheduled_meetings(task_id, device_id, backup_dir), lambda meeting: (not _is_any_seed_meeting(meeting) and _matches_local_slot(meeting.get("startTime"), tomorrow, 19, 0) and required_invitees.issubset(_invitee_ids(meeting)))) is not None
-
-    if task_id == 16:
-        return _find_latest(_scheduled_meetings(task_id, device_id, backup_dir), lambda meeting: (not _is_any_seed_meeting(meeting) and str(meeting.get("repeat", "")) == "Every day" and _matches_local_time(meeting.get("startTime"), 10, 0) and _invitee_ids(meeting) == all_contact_ids)) is not None
-
-    if task_id == 17:
-        return _find_seed_meeting(task_id, device_id, backup_dir, 3) is None
-
-    if task_id == 18:
-        return bool(natalie_id and _direct_message_exists(task_id, device_id, backup_dir, partner_user_id=natalie_id, keyword_groups=LEAVE_MESSAGE_KEYWORD_GROUPS))
-
-    if task_id == 19:
-        seed_meeting = _find_seed_meeting(task_id, device_id, backup_dir, 2)
-        return bool(seed_meeting and _matches_local_slot(seed_meeting.get("startTime"), _tomorrow_local_date(), 13, 0))
-
-    if task_id == 20:
-        seed_meeting = _find_seed_meeting(task_id, device_id, backup_dir, 2)
-        return bool(seed_meeting and bool(seed_meeting.get("waitingRoomEnabled")) and int(seed_meeting.get("durationMinutes", 0)) == 240)
-
-    if task_id == 21:
-        seed_meeting = _find_seed_meeting(task_id, device_id, backup_dir, 1)
-        seed_meeting_id = str(seed_meeting.get("signalId", "")) if seed_meeting else ""
-        return bool(
-            seed_meeting
+            and _normalize_text("[GUIA-02] Instant Sync") in _normalize_text(str(host_session.get("topic", "")))
+            and bool(host_session.get("waitingRoomEnabled"))
+            and bool(host_session.get("allowJoinBeforeHost")) is False
             and _find_meeting_action(
                 task_id,
                 device_id,
                 backup_dir,
-                action_type=ACTION_MEETING_STARTED,
-                meeting_id=seed_meeting_id,
+                action_type=ACTION_INVITE_CONTACTS,
+                meeting_id=meeting_id,
+                required_target_ids=list(required_invitees),
+            )
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_COPY_MEETING_NUMBER, meeting_id=meeting_id)
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_COPY_INVITE_LINK, meeting_id=meeting_id)
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=meeting_id, exit_action="END_FOR_ALL")
+        )
+
+    if task_id == 3:
+        join_session = _find_instant_session(task_id, device_id, backup_dir, source="JOIN", meeting_number="994488281")
+        meeting_id = str(join_session.get("signalId", "")) if join_session else ""
+        media_state = _resolve_effective_media_state(task_id, device_id, backup_dir, meeting_id)
+        return bool(
+            join_session
+            and _media_state_matches(media_state, microphone_on=False, camera_on=True)
+            and _chat_message_exists(task_id, device_id, backup_dir, meeting_ids={meeting_id}, content_exact="I'm lcl.")
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_RAISE_HAND, meeting_id=meeting_id)
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_LOWER_HAND, meeting_id=meeting_id)
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_EMOJI_REACTION, meeting_id=meeting_id, emoji="\U0001f44d")
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=meeting_id, exit_action="LEAVE_SELF")
+        )
+
+    if task_id == 4:
+        target_meeting_ids = {
+            str(session.get("signalId"))
+            for session in _instant_meetings(task_id, device_id, backup_dir)
+            if str(session.get("meetingNumber", "")) == "389257198" and session.get("signalId")
+        }
+        has_chat = _chat_message_exists(task_id, device_id, backup_dir, meeting_ids=target_meeting_ids, content_exact="Amber, please start.")
+        return bool(
+            _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MUTE_ALL, meeting_number="389257198")
+            and amber_id
+            and _find_meeting_action(
+                task_id,
+                device_id,
+                backup_dir,
+                action_type=ACTION_PARTICIPANT_UNMUTE,
+                meeting_number="389257198",
+                required_target_ids=[amber_id],
+            )
+            and has_chat
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_LOCK_MEETING, meeting_number="389257198")
+        )
+
+    if task_id == 5:
+        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST", use_personal_meeting_id=False)
+        meeting_id = str(host_session.get("signalId", "")) if host_session else ""
+        has_started_share = _find_meeting_action(
+            task_id,
+            device_id,
+            backup_dir,
+            action_type=ACTION_SCREEN_SHARE_STATUS_CHANGED,
+            meeting_id=meeting_id,
+            screen_sharing_enabled=True,
+        ) is not None
+        has_paused_share = _find_meeting_action(
+            task_id,
+            device_id,
+            backup_dir,
+            action_type=ACTION_SCREEN_SHARE_PAUSED,
+            meeting_id=meeting_id,
+        ) is not None
+        has_resume_share = _has_screen_share_resume_evidence(task_id, device_id, backup_dir, meeting_id)
+        has_paused_chat = _chat_message_exists(
+            task_id,
+            device_id,
+            backup_dir,
+            meeting_ids={meeting_id},
+            content_exact="Sharing paused.",
+        )
+        has_stopped_share = _find_meeting_action(
+            task_id,
+            device_id,
+            backup_dir,
+            action_type=ACTION_SCREEN_SHARE_STATUS_CHANGED,
+            meeting_id=meeting_id,
+            screen_sharing_enabled=False,
+        ) is not None
+        has_end_for_all = _find_meeting_action(
+            task_id,
+            device_id,
+            backup_dir,
+            action_type=ACTION_MEETING_EXITED,
+            meeting_id=meeting_id,
+            exit_action="END_FOR_ALL",
+        ) is not None
+        passed = bool(
+            host_session
+            and has_started_share
+            and has_paused_share
+            and has_paused_chat
+            and has_resume_share
+            and has_stopped_share
+            and has_end_for_all
+        )
+        if not passed:
+            logging.info(
+                "Zoom task 5 verify detail: host=%s started=%s paused=%s paused_chat=%s resumed=%s stopped=%s end_for_all=%s",
+                bool(host_session),
+                has_started_share,
+                has_paused_share,
+                has_paused_chat,
+                has_resume_share,
+                has_stopped_share,
+                has_end_for_all,
+            )
+        return passed
+
+    if task_id == 6:
+        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST", use_personal_meeting_id=False)
+        meeting_id = str(host_session.get("signalId", "")) if host_session else ""
+        media_state = _resolve_effective_media_state(task_id, device_id, backup_dir, meeting_id)
+        return bool(
+            host_session
+            and _media_state_matches(media_state, microphone_on=True, camera_on=True, audio_option="none")
+            and _chat_message_exists(task_id, device_id, backup_dir, meeting_ids={meeting_id}, content_exact="Audio disconnected, video on.")
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=meeting_id, exit_action="END_FOR_ALL")
+        )
+
+    if task_id == 7:
+        required_invitees = {derek_id, brittany_id} - {""}
+        meeting = _find_scheduled_meeting(
+            task_id,
+            device_id,
+            backup_dir,
+            lambda item: (
+                _meeting_topic_contains(item, "[GUIA-07] Project Sync")
+                and _matches_local_slot(item.get("startTime"), tomorrow, 19, 0)
+                and int(item.get("durationMinutes", 0)) == 90
+                and required_invitees.issubset(_invitee_ids(item))
+                and bool(item.get("waitingRoomEnabled"))
+                and bool(str(item.get("passcode", "")).strip())
+                and bool(item.get("hostVideoOn"))
+                and bool(item.get("participantVideoOn")) is False
+            ),
+        )
+        return meeting is not None
+
+    if task_id == 8:
+        required_invitees = {amber_id, natalie_id} - {""}
+        meeting = _find_scheduled_meeting(
+            task_id,
+            device_id,
+            backup_dir,
+            lambda item: (
+                _meeting_topic_contains(item, "[GUIA-08] Daily Standup")
+                and _matches_local_slot(item.get("startTime"), day_after_tomorrow, 9, 30)
+                and int(item.get("durationMinutes", 0)) == 30
+                and str(item.get("repeat", "")) == "Every weekday"
+                and required_invitees.issubset(_invitee_ids(item))
+                and bool(item.get("allowJoinBeforeHost", True)) is False
+            ),
+        )
+        return meeting is not None
+
+    if task_id == 9:
+        meeting = _find_scheduled_meeting(
+            task_id,
+            device_id,
+            backup_dir,
+            lambda item: (
+                _meeting_topic_contains(item, "[GUIA-07] Project Sync")
+                and _matches_local_slot(item.get("startTime"), tomorrow, 19, 30)
+                and int(item.get("durationMinutes", 0)) == 120
+                and natalie_id in _invitee_ids(item)
+                and bool(item.get("waitingRoomEnabled"))
+            ),
+        )
+        return meeting is not None
+
+    if task_id == 10:
+        seed_noon = _find_seed_meeting(task_id, device_id, backup_dir, 2)
+        updated_seed = bool(
+            seed_noon
+            and _matches_local_slot(seed_noon.get("startTime"), tomorrow, 13, 0)
+            and int(seed_noon.get("durationMinutes", 0)) == 240
+        )
+        created_meeting = _find_scheduled_meeting(
+            task_id,
+            device_id,
+            backup_dir,
+            lambda item: (
+                not _is_any_seed_meeting(item)
+                and _matches_local_slot(item.get("startTime"), tomorrow, 13, 0)
+                and int(item.get("durationMinutes", 0)) == 240
+                and amber_id in _invitee_ids(item)
+            ),
+        )
+        return updated_seed or created_meeting is not None
+
+    if task_id == 11:
+        morning_meeting = _find_seed_meeting(task_id, device_id, backup_dir, 1)
+        meeting_id = str(morning_meeting.get("signalId", "")) if morning_meeting else ""
+        return bool(
+            morning_meeting
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_COPY_INVITE_LINK, meeting_id=meeting_id)
+            and derek_id
+            and _direct_message_exists(
+                task_id,
+                device_id,
+                backup_dir,
+                partner_user_id=derek_id,
+                keyword_groups=[["会议链接已更新", "请查收"]],
+                require_link=True,
+            )
+            and brittany_id
+            and _direct_message_exists(
+                task_id,
+                device_id,
+                backup_dir,
+                partner_user_id=brittany_id,
+                keyword_groups=[["会议链接已更新", "请查收"]],
+                require_link=True,
             )
         )
 
-    if task_id == 22:
-        seed_meeting = _find_seed_meeting(task_id, device_id, backup_dir, 1)
-        return bool(seed_meeting and _chat_message_exists(task_id, device_id, backup_dir, meeting_ids={str(seed_meeting.get("signalId", ""))}, keyword_groups=LATE_MESSAGE_KEYWORD_GROUPS))
+    if task_id == 12:
+        may_first_guia_meetings = [
+            meeting
+            for meeting in _scheduled_meetings(task_id, device_id, backup_dir)
+            if _meeting_topic_contains(meeting, "[GUIA]")
+            and (_to_local_datetime(meeting.get("startTime")) is not None)
+            and _to_local_datetime(meeting.get("startTime")).month == 5
+            and _to_local_datetime(meeting.get("startTime")).day == 1
+        ]
+        removed_signal_id = str(task_context.get("task12_expected_removed_signal_id", "")).strip()
+        pre_match_count = task_context.get("task12_pre_match_count")
 
-    if task_id == 23:
-        seed_meeting = _find_seed_meeting(task_id, device_id, backup_dir, 1)
-        return bool(seed_meeting and _invitee_ids(seed_meeting) == all_contact_ids)
+        if removed_signal_id:
+            removed = all(str(meeting.get("signalId", "")) != removed_signal_id for meeting in may_first_guia_meetings)
+            if not removed:
+                logging.info("Zoom task 12 verify detail: expected removed signal still exists: %s", removed_signal_id)
+            return removed
+
+        if isinstance(pre_match_count, int) and pre_match_count > 0:
+            expected_remaining = max(pre_match_count - 1, 0)
+            matched = len(may_first_guia_meetings) == expected_remaining
+            if not matched:
+                logging.info(
+                    "Zoom task 12 verify detail: pre_count=%s, expected_remaining=%s, actual_remaining=%s",
+                    pre_match_count,
+                    expected_remaining,
+                    len(may_first_guia_meetings),
+                )
+            return matched
+
+        logging.info("Zoom task 12 verify detail: no precondition context and no cancellable target meeting")
+        return False
+
+    if task_id == 13:
+        upcoming = _upcoming_unstarted_scheduled_meetings(task_id, device_id, backup_dir)
+        if not _result_contains_number(result, len(upcoming)):
+            return False
+        if not upcoming:
+            return False
+        earliest = min(upcoming, key=lambda item: int(item.get("startTime", 0)))
+        return _find_meeting_action(
+            task_id,
+            device_id,
+            backup_dir,
+            action_type=ACTION_COPY_INVITE_LINK,
+            meeting_id=str(earliest.get("signalId", "")),
+        ) is not None
+
+    if task_id == 14:
+        return bool(
+            natalie_id
+            and _direct_message_exists(
+                task_id,
+                device_id,
+                backup_dir,
+                partner_user_id=natalie_id,
+                keyword_groups=LEAVE_MESSAGE_KEYWORD_GROUPS,
+            )
+        )
+
+    if task_id == 15:
+        expected_unread = len(
+            [
+                item
+                for item in _chat_thread_states(task_id, device_id, backup_dir)
+                if int(item.get("unreadCount", 0)) > 0
+            ]
+        )
+        return bool(
+            amber_id
+            and _direct_message_exists(
+                task_id,
+                device_id,
+                backup_dir,
+                partner_user_id=amber_id,
+                content_exact="Please confirm tomorrow's meeting.",
+            )
+            and derek_id
+            and _direct_message_exists(
+                task_id,
+                device_id,
+                backup_dir,
+                partner_user_id=derek_id,
+                content_exact="Please confirm tomorrow's meeting.",
+            )
+            and _result_contains_number(result, expected_unread)
+        )
+
+    if task_id == 16:
+        profile = _profile_state(task_id, device_id, backup_dir)
+        return str(profile.get("availability", "")) == "Busy" and str(profile.get("displayName", "")) == "Liu Chenlong"
+
+    if task_id == 17:
+        preferences = _meeting_preferences(task_id, device_id, backup_dir)
+        host_session = _find_instant_session(task_id, device_id, backup_dir, source="HOST")
+        meeting_id = str(host_session.get("signalId", "")) if host_session else ""
+        media_state = _resolve_effective_media_state(task_id, device_id, backup_dir, meeting_id)
+        return bool(
+            host_session
+            and preferences.get("autoConnectAudioOn") is False
+            and preferences.get("autoTurnOnCameraOn") is True
+            and _media_state_matches(media_state, camera_on=True, audio_option="none")
+        )
+
+    if task_id == 18:
+        host_session = _find_instant_session(
+            task_id,
+            device_id,
+            backup_dir,
+            source="HOST",
+            meeting_number=PERSONAL_MEETING_NUMBER,
+            use_personal_meeting_id=True,
+        )
+        meeting_id = str(host_session.get("signalId", "")) if host_session else ""
+        return bool(
+            host_session
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_COPY_INVITE_LINK, meeting_id=meeting_id)
+            and amber_id
+            and _direct_message_exists(
+                task_id,
+                device_id,
+                backup_dir,
+                partner_user_id=amber_id,
+                keyword_groups=[["请使用这条链接加入会议"]],
+                require_link=True,
+            )
+            and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=meeting_id, exit_action="END_FOR_ALL")
+        )
+
+    if task_id == 19:
+        future_seven_days = _upcoming_unstarted_scheduled_meetings(task_id, device_id, backup_dir, days=7)
+        if not _result_contains_number(result, len(future_seven_days)):
+            return False
+        if not future_seven_days:
+            return False
+        latest_meeting = max(future_seven_days, key=lambda item: int(item.get("startTime", 0)))
+        renamed = _find_scheduled_meeting(
+            task_id,
+            device_id,
+            backup_dir,
+            lambda item: _normalize_text(str(item.get("topic", ""))) == _normalize_text("[GUIA-19] Final Review"),
+        )
+        return bool(renamed and str(renamed.get("signalId", "")) == str(latest_meeting.get("signalId", "")))
+
+    if task_id == 20:
+        future_meetings = _upcoming_unstarted_scheduled_meetings(task_id, device_id, backup_dir)
+        if not future_meetings:
+            return False
+        nearest = min(future_meetings, key=lambda item: int(item.get("startTime", 0)))
+        passed = bool(nearest.get("waitingRoomEnabled")) and bool(nearest.get("allowJoinBeforeHost", True)) is False
+        if not passed:
+            logging.info(
+                "Zoom task 20 verify detail: nearest signal=%s waitingRoomEnabled=%s allowJoinBeforeHost=%s",
+                str(nearest.get("signalId", "")),
+                nearest.get("waitingRoomEnabled"),
+                nearest.get("allowJoinBeforeHost"),
+            )
+        return passed
 
     logging.error("Unsupported Zoom task ID: %s", task_id)
     return False

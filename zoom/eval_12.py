@@ -12,6 +12,7 @@ def verify_raise_lower_hand_with_thumbs_up(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

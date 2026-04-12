@@ -12,6 +12,7 @@ def verify_cancel_may_first_schedule(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

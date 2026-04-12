@@ -12,6 +12,7 @@ def verify_safe_driving_hello(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

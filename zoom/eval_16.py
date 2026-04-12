@@ -12,6 +12,7 @@ def verify_daily_1000_with_all_contacts(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

@@ -12,6 +12,7 @@ def verify_message_natalie_about_next_monday_leave(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

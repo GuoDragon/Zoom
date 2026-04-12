@@ -12,6 +12,7 @@ def verify_delay_tomorrow_noon_to_1300(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 

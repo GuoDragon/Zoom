@@ -12,6 +12,7 @@ def verify_enable_waiting_room_and_extend_noon_meeting(
         result=result,
         device_id=device_id,
         backup_dir=backup_dir,
+        **kwargs,
     )
 
 
