@@ -46,8 +46,10 @@ SHANGHAI_TZ = timezone(timedelta(hours=8))
 RESULT_SKIP_KEYS = {"point", "path", "screenshot_path", "image"}
 _RUNTIME_CACHE: dict[tuple[int, str, str | None, str | None], object] = {}
 
-LATE_MESSAGE_KEYWORD_GROUPS = [['迟到', '十分钟'], ['late', '10'], ['late', 'ten']]
-LEAVE_MESSAGE_KEYWORD_GROUPS = [['下周一', '请假'], ['下周一', '请个假'], ['next monday', 'leave'], ['next monday', 'miss']]
+LATE_MESSAGE_KEYWORD_GROUPS = [['late', '10'], ['late', 'ten']]
+LEAVE_MESSAGE_KEYWORD_GROUPS = [['next monday', 'leave'], ['next monday', 'miss'], ['next monday', 'meeting', 'leave'], ['take leave', 'next monday']]
+UPDATED_LINK_MESSAGE_KEYWORD_GROUPS = [['meeting link', 'updated', 'check'], ['meeting link', 'updated', 'please check']]
+INVITE_LINK_PREFIX_KEYWORD_GROUPS = [['use this link', 'join the meeting']]
 
 
 def _build_backup_dir(task_id: int, backup_dir: str | None) -> str:
@@ -756,7 +758,7 @@ def evaluate_task(task_id: int, result=None, device_id=None, backup_dir=None, **
                 device_id,
                 backup_dir,
                 partner_user_id=derek_id,
-                keyword_groups=[["会议链接已更新", "请查收"]],
+                keyword_groups=UPDATED_LINK_MESSAGE_KEYWORD_GROUPS,
                 require_link=True,
             )
             and brittany_id
@@ -765,7 +767,7 @@ def evaluate_task(task_id: int, result=None, device_id=None, backup_dir=None, **
                 device_id,
                 backup_dir,
                 partner_user_id=brittany_id,
-                keyword_groups=[["会议链接已更新", "请查收"]],
+                keyword_groups=UPDATED_LINK_MESSAGE_KEYWORD_GROUPS,
                 require_link=True,
             )
         )
@@ -893,7 +895,7 @@ def evaluate_task(task_id: int, result=None, device_id=None, backup_dir=None, **
                 device_id,
                 backup_dir,
                 partner_user_id=amber_id,
-                keyword_groups=[["请使用这条链接加入会议"]],
+                keyword_groups=INVITE_LINK_PREFIX_KEYWORD_GROUPS,
                 require_link=True,
             )
             and _find_meeting_action(task_id, device_id, backup_dir, action_type=ACTION_MEETING_EXITED, meeting_id=meeting_id, exit_action="END_FOR_ALL")
