@@ -35,6 +35,8 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingShareOverlay(
+    screenSharingEnabled: Boolean,
+    sharePaused: Boolean,
     onDismiss: () -> Unit,
     onShareScreenChanged: (Boolean) -> Unit,
     onPauseShare: () -> Unit = {},
@@ -42,7 +44,6 @@ fun MeetingShareOverlay(
 ) {
     val state = rememberMeetingMorePagesUiState()
     var selectedLabel by remember { mutableStateOf<String?>(null) }
-    var shareScreenEnabled by remember { mutableStateOf(false) }
 
     MeetingDarkSheetOverlay(
         title = "Share",
@@ -53,11 +54,11 @@ fun MeetingShareOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(if (shareScreenEnabled) Color(0xFF21463D) else Color(0xFF34353A))
+                .background(if (screenSharingEnabled) Color(0xFF21463D) else Color(0xFF34353A))
                 .clickable {
-                    shareScreenEnabled = !shareScreenEnabled
+                    val updatedSharingEnabled = !screenSharingEnabled
                     selectedLabel = null
-                    onShareScreenChanged(shareScreenEnabled)
+                    onShareScreenChanged(updatedSharingEnabled)
                 }
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.Center,
@@ -85,13 +86,14 @@ fun MeetingShareOverlay(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            val pauseEnabled = screenSharingEnabled && !sharePaused
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFF34353A))
                     .clickable {
-                        if (shareScreenEnabled) {
+                        if (pauseEnabled) {
                             onPauseShare()
                         }
                     }
@@ -100,18 +102,19 @@ fun MeetingShareOverlay(
             ) {
                 Text(
                     text = "Pause share",
-                    color = if (shareScreenEnabled) Color.White else Color(0xFF7D8089),
+                    color = if (pauseEnabled) Color.White else Color(0xFF7D8089),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
+            val resumeEnabled = screenSharingEnabled && sharePaused
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFF34353A))
                     .clickable {
-                        if (shareScreenEnabled) {
+                        if (resumeEnabled) {
                             onResumeShare()
                         }
                     }
@@ -120,7 +123,7 @@ fun MeetingShareOverlay(
             ) {
                 Text(
                     text = "Resume share",
-                    color = if (shareScreenEnabled) Color.White else Color(0xFF7D8089),
+                    color = if (resumeEnabled) Color.White else Color(0xFF7D8089),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -137,7 +140,9 @@ fun MeetingShareOverlay(
                 showChevron = false,
                 onClick = {
                     selectedLabel = if (selectedLabel == option.label) null else option.label
-                    shareScreenEnabled = false
+                    if (screenSharingEnabled) {
+                        onShareScreenChanged(false)
+                    }
                 }
             )
         }

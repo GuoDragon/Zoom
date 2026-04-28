@@ -40,6 +40,7 @@ import com.example.zoom.ui.theme.ZoomBlue
 fun ScheduleMeetingDetailedInCalendarScreen(
     meetingId: String,
     onBackClick: () -> Unit,
+    onEditClick: (String) -> Unit,
     onStartClick: (String) -> Unit
 ) {
     var uiState by remember { mutableStateOf<ScheduleMeetingDetailedInCalendarUiState?>(null) }
@@ -85,6 +86,19 @@ fun ScheduleMeetingDetailedInCalendarScreen(
                             color = ZoomBlue,
                             fontSize = 16.sp,
                             modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
+                },
+                actions = {
+                    if (state.canEdit) {
+                        Text(
+                            text = "Edit",
+                            color = ZoomBlue,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .clickable { onEditClick(state.meetingId) }
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
                 },

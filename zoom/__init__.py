@@ -98,7 +98,7 @@ ZOOM_TASKS = AppTasks(
             is_reasoning=False,
         ),
         TaskItem(
-            instruction='Count all currently "Not started" scheduled meetings, then open the earliest one, copy its invite link, and return to the meeting list.',
+            instruction='Count all currently "Not started" scheduled meetings, then open the earliest one, copy its invite link, and return to the meeting list. Put the numeric answer between <ans> and </ans>, using Arabic numerals, for example <ans>3</ans>.',
             verify_func=verify_contact_count_answer,
             human_steps=7,
             is_reasoning=True,
@@ -110,7 +110,7 @@ ZOOM_TASKS = AppTasks(
             is_reasoning=False,
         ),
         TaskItem(
-            instruction="Find Amber Campbell and Derek Stewart in the contacts list, send each of them \"Please confirm tomorrow's meeting.\", then count the current number of unread chat threads.",
+            instruction="Find Amber Campbell and Derek Stewart in the contacts list, send each of them \"Please confirm tomorrow's meeting.\", then count the current number of unread chat threads. Put the numeric answer between <ans> and </ans>, using Arabic numerals, for example <ans>3</ans>.",
             verify_func=verify_schedule_tomorrow_1900_with_derek_and_brittany,
             human_steps=7,
             is_reasoning=True,
@@ -134,13 +134,13 @@ ZOOM_TASKS = AppTasks(
             is_reasoning=False,
         ),
         TaskItem(
-            instruction='Find all not-started meetings in the next 7 days, count them, and rename the latest-starting one to "[GUIA-19] Final Review".',
+            instruction='Find all not-started meetings in the next 7 days, count them, and rename the latest-starting one to "[GUIA-19] Final Review". Put the numeric answer between <ans> and </ans>, using Arabic numerals, for example <ans>3</ans>.',
             verify_func=verify_delay_tomorrow_noon_to_1300,
             human_steps=8,
             is_reasoning=True,
         ),
         TaskItem(
-            instruction='Find the most recent meeting that you host and that has not started yet, enable the waiting room, disable "Allow participants to join before host", save, and return to the meeting list.',
+            instruction='Find the nearest scheduled meeting that has not started yet, enable the waiting room, disable "Allow participants to join before host", save it, and return to the meeting list.',
             verify_func=verify_enable_waiting_room_and_extend_noon_meeting,
             human_steps=7,
             is_reasoning=False,

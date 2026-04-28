@@ -1,10 +1,12 @@
 package com.example.zoom.presentation.search.detail.meetingdetail
 
 data class SearchMeetingDetailUiState(
+    val meetingId: String,
     val topic: String,
     val dateTimeLabel: String,
     val durationLabel: String,
-    val participants: List<ParticipantItem>
+    val participants: List<ParticipantItem>,
+    val canCancel: Boolean
 )
 
 data class ParticipantItem(
@@ -20,5 +22,6 @@ interface SearchMeetingDetailContract {
 
     interface Presenter {
         fun loadData()
+        fun cancelMeeting(): Boolean
     }
 }

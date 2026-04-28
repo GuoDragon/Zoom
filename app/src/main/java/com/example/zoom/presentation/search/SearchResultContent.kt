@@ -42,6 +42,7 @@ import com.example.zoom.ui.theme.ZoomBlue
 fun SearchPageContent(
     state: SearchUiState,
     onContactClick: (String) -> Unit,
+    onMeetingClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (state.selectedCategory) {
@@ -51,6 +52,7 @@ fun SearchPageContent(
             SearchTopResultsContent(
                 state = state.topResults,
                 onContactClick = onContactClick,
+                onMeetingClick = onMeetingClick,
                 modifier = modifier
             )
         }
@@ -70,7 +72,7 @@ fun SearchPageContent(
         SearchCategory.Meetings -> if (state.query.isBlank()) {
             SearchPromptContent("Use keywords or filters to start your search", modifier)
         } else {
-            SearchMeetingsContent(state.meetingResults, modifier)
+            SearchMeetingsContent(state.meetingResults, onMeetingClick, modifier)
         }
 
         SearchCategory.Contacts -> if (state.query.isBlank()) {
@@ -99,6 +101,7 @@ fun SearchPageContent(
 fun SearchTopResultsContent(
     state: SearchTopResultsUiState,
     onContactClick: (String) -> Unit,
+    onMeetingClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hasAnyResults = state.messages.isNotEmpty() ||
@@ -126,7 +129,7 @@ fun SearchTopResultsContent(
         }
         if (state.meetings.isNotEmpty()) {
             item { SectionHeader("Meetings") }
-            items(state.meetings) { MeetingResultCard(it) }
+            items(state.meetings) { MeetingResultCard(meeting = it, onClick = { onMeetingClick(it.meetingId) }) }
         }
         if (state.contacts.isNotEmpty()) {
             item { SectionHeader("Contacts") }
@@ -174,6 +177,7 @@ fun SearchChatsContent(
 @Composable
 fun SearchMeetingsContent(
     results: List<MeetingResult>,
+    onMeetingClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (results.isEmpty()) {
@@ -185,7 +189,7 @@ fun SearchMeetingsContent(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        items(results) { MeetingResultCard(it) }
+        items(results) { MeetingResultCard(meeting = it, onClick = { onMeetingClick(it.meetingId) }) }
     }
 }
 
@@ -504,11 +508,15 @@ private fun ChatResultRow(chat: ChatResult) {
 }
 
 @Composable
-private fun MeetingResultCard(meeting: MeetingResult) {
+private fun MeetingResultCard(
+    meeting: MeetingResult,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F9FB)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)

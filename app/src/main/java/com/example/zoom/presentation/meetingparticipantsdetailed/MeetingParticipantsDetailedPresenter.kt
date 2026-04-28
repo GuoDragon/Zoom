@@ -150,11 +150,7 @@ class MeetingParticipantsDetailedPresenter(
 
     override fun copyInviteLink(meetingId: String): String {
         val inviteLink = DataRepository.getMeetingInviteLink(meetingId)
-        DataRepository.recordMeetingAction(
-            actionType = MeetingActionTypes.COPY_INVITE_LINK,
-            meetingId = meetingId,
-            note = inviteLink
-        )
+        DataRepository.recordCopiedInviteLink(meetingId = meetingId, inviteLink = inviteLink)
         return inviteLink
     }
 

@@ -34,11 +34,17 @@ class SearchMeetingDetailPresenter(
 
         view.showContent(
             SearchMeetingDetailUiState(
+                meetingId = meetingId,
                 topic = meeting.topic,
                 dateTimeLabel = dateFormat.format(Date(meeting.startTime)),
                 durationLabel = durationLabel,
-                participants = participants
+                participants = participants,
+                canCancel = DataRepository.getScheduledMeetingSignalById(meetingId) != null
             )
         )
+    }
+
+    override fun cancelMeeting(): Boolean {
+        return DataRepository.cancelScheduledMeeting(meetingId)
     }
 }

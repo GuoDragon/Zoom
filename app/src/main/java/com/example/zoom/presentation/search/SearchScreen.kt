@@ -61,7 +61,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchScreen(
     onBackClick: () -> Unit,
-    onContactClick: (String) -> Unit
+    onContactClick: (String) -> Unit,
+    onMeetingClick: (String) -> Unit
 ) {
     var uiState by remember { mutableStateOf<SearchUiState?>(null) }
     val searchFocusRequester = remember { FocusRequester() }
@@ -112,7 +113,8 @@ fun SearchScreen(
 
                 SearchPageContent(
                     state = state,
-                    onContactClick = onContactClick
+                    onContactClick = onContactClick,
+                    onMeetingClick = onMeetingClick
                 )
             }
         }

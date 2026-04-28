@@ -54,7 +54,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.zoom.common.constants.MeetingActionTypes
 import com.example.zoom.data.DataRepository
 import com.example.zoom.presentation.schedulemeeting.ScheduleMeetingInviteeOption
 import com.example.zoom.ui.components.ZoomInsetDivider
@@ -246,11 +245,7 @@ fun ScheduleMeetingDetailedScreen(
                     onClick = {
                         val inviteLink = DataRepository.getMeetingInviteLink(state.meetingId)
                         copyTextToClipboard(context, "Zoom Invite Link", inviteLink)
-                        DataRepository.recordMeetingAction(
-                            actionType = MeetingActionTypes.COPY_INVITE_LINK,
-                            meetingId = state.meetingId,
-                            note = inviteLink
-                        )
+                        DataRepository.recordCopiedInviteLink(meetingId = state.meetingId, inviteLink = inviteLink)
                     }
                 )
             }

@@ -96,10 +96,9 @@ fun MeetingInfoPage(
                 onDismiss = onDismiss,
                 onCopyMeetingLink = {
                     copyToClipboard(context, state.inviteLink)
-                    DataRepository.recordMeetingAction(
-                        actionType = MeetingActionTypes.COPY_INVITE_LINK,
+                    DataRepository.recordCopiedInviteLink(
                         meetingId = DataRepository.getCurrentMeeting().meetingId,
-                        note = state.inviteLink
+                        inviteLink = state.inviteLink
                     )
                 },
                 onCopyMeetingNumber = {

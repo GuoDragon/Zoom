@@ -10,6 +10,7 @@ object RuntimeSignalFileNames {
     const val RUNTIME_DIRECT_MESSAGES = "runtime_direct_messages.json"
     const val RUNTIME_MEETING_PREFERENCES = "runtime_meeting_preferences.json"
     const val RUNTIME_CHAT_THREAD_STATES = "runtime_chat_thread_states.json"
+    const val RUNTIME_CLIPBOARD_ACTIONS = "runtime_clipboard_actions.json"
     const val RUNTIME_META = "runtime_meta.json"
 }
 

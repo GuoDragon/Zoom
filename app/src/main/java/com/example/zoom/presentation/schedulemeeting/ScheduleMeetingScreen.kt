@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.zoom.ui.components.ZoomActionPageTopBar
@@ -157,11 +160,32 @@ fun ScheduleMeetingScreen(
         ) {
             item {
                 ZoomPageSurface(modifier = Modifier.fillMaxWidth().background(Color.White)) {
-                    Text(
-                        text = screenDraft.meetingTitle,
-                        fontSize = 24.sp,
-                        color = Color(0xFFC7CCD4),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
+                    TextField(
+                        value = screenDraft.meetingTitle,
+                        onValueChange = { updatedTitle ->
+                            draft = draft?.copy(meetingTitle = updatedTitle)
+                        },
+                        placeholder = {
+                            Text(
+                                text = "Meeting title",
+                                fontSize = 24.sp,
+                                color = Color(0xFFC7CCD4)
+                            )
+                        },
+                        textStyle = TextStyle(
+                            fontSize = 24.sp,
+                            color = Color(0xFF2B3645)
+                        ),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
                     )
                     ZoomInsetDivider()
                     ZoomSettingValueRow(

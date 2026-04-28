@@ -95,6 +95,9 @@ fun ZoomNavGraph(
                 onBackClick = { navController.popBackStack() },
                 onContactClick = { userId ->
                     navController.navigate(Screen.DirectChat.createRoute(userId))
+                },
+                onMeetingClick = { meetingId ->
+                    navController.navigate(Screen.ScheduleMeetingDetailed.createRoute(meetingId))
                 }
             )
         }
@@ -316,6 +319,9 @@ fun ZoomNavGraph(
             ScheduleMeetingDetailedInCalendarScreen(
                 meetingId = meetingId,
                 onBackClick = { navController.popBackStack() },
+                onEditClick = { selectedMeetingId ->
+                    navController.navigate(Screen.ScheduleMeeting.createRoute(selectedMeetingId))
+                },
                 onStartClick = { selectedMeetingId ->
                     val scheduledSignal = DataRepository.getScheduledMeetingSignalById(selectedMeetingId)
                     val preferences = DataRepository.getMeetingPreferencesSignal()

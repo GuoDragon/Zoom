@@ -7,6 +7,7 @@ import com.example.zoom.common.constants.MeetingActionTypes
 import com.example.zoom.common.constants.RuntimeSignalFileNames
 import com.example.zoom.common.constants.RuntimeSignalPrefixes
 import com.example.zoom.model.ChatThreadStateSignal
+import com.example.zoom.model.ClipboardActionSignal
 import com.example.zoom.model.DirectMessageSignal
 import com.example.zoom.model.InstantMeetingSessionSignal
 import com.example.zoom.model.JoinMeetingHistoryAction
@@ -67,6 +68,7 @@ object DataRepository {
     private var runtimeJoinHistoryEntries: MutableList<JoinMeetingHistoryEntry> = mutableListOf()
     private var runtimeJoinHistoryActions: MutableList<JoinMeetingHistoryAction> = mutableListOf()
     private var runtimeMeetingActions: MutableList<MeetingActionSignal> = mutableListOf()
+    private var runtimeClipboardActions: MutableList<ClipboardActionSignal> = mutableListOf()
     private var runtimeChatThreadStates: MutableList<ChatThreadStateSignal> = mutableListOf()
     private lateinit var meetingPreferencesSignal: MeetingPreferencesSignal
     private lateinit var profileSignal: UserProfileSignal
@@ -131,6 +133,7 @@ object DataRepository {
         RuntimeSignalFileNames.RUNTIME_DIRECT_MESSAGES to runtimeDirectMessageFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_JOIN_HISTORY to runtimeJoinHistoryFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS to runtimeMeetingActionFile().absolutePath,
+        RuntimeSignalFileNames.RUNTIME_CLIPBOARD_ACTIONS to runtimeClipboardActionFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_PROFILE_STATE to runtimeProfileStateFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_MEETING_PREFERENCES to runtimeMeetingPreferencesFile().absolutePath,
         RuntimeSignalFileNames.RUNTIME_CHAT_THREAD_STATES to runtimeChatThreadStateFile().absolutePath,
@@ -266,8 +269,15 @@ object DataRepository {
 
     fun searchMeetings(query: String): List<Meeting> {
         if (query.isBlank()) return emptyList()
-        val q = query.lowercase()
-        return getMeetings().filter { it.topic.lowercase().contains(q) }
+        val q = query.lowercase().trim()
+        val queryDigits = q.filter(Char::isDigit)
+        return getMeetings().filter { meeting ->
+            val meetingNumber = getMeetingNumber(meeting.meetingId)
+            val meetingDigits = meetingNumber.filter(Char::isDigit)
+            meeting.topic.lowercase().contains(q) ||
+                meetingNumber.lowercase().contains(q) ||
+                (queryDigits.isNotEmpty() && meetingDigits.contains(queryDigits))
+        }
     }
 
     fun searchUsers(query: String): List<User> {
@@ -700,6 +710,41 @@ object DataRepository {
         return action
     }
 
+    fun recordClipboardAction(
+        type: String,
+        meetingId: String,
+        text: String
+    ): ClipboardActionSignal {
+        val timestamp = System.currentTimeMillis()
+        val action = ClipboardActionSignal(
+            type = type,
+            meetingId = meetingId,
+            meetingNumber = getMeetingNumber(meetingId),
+            text = text,
+            createdAt = timestamp
+        )
+        runtimeClipboardActions.add(action)
+        if (runtimeClipboardActions.size > 100) {
+            runtimeClipboardActions = runtimeClipboardActions.takeLast(100).toMutableList()
+        }
+        persistRuntimeClipboardActions()
+        bumpRuntimeDataVersion()
+        return action
+    }
+
+    fun recordCopiedInviteLink(meetingId: String, inviteLink: String = getMeetingInviteLink(meetingId)): MeetingActionSignal {
+        recordClipboardAction(
+            type = MeetingActionTypes.COPY_INVITE_LINK,
+            meetingId = meetingId,
+            text = inviteLink
+        )
+        return recordMeetingAction(
+            actionType = MeetingActionTypes.COPY_INVITE_LINK,
+            meetingId = meetingId,
+            note = inviteLink
+        )
+    }
+
     fun setCurrentMeetingScreenShareEnabled(enabled: Boolean, note: String = "Share toggled from meeting") {
         val meetingId = getCurrentMeeting().meetingId
         if (enabled) {
@@ -763,6 +808,7 @@ object DataRepository {
         runtimeJoinHistoryEntries = defaultJoinHistoryEntries()
         runtimeJoinHistoryActions = mutableListOf()
         runtimeMeetingActions = mutableListOf()
+        runtimeClipboardActions = mutableListOf()
         meetingPreferencesSignal = MeetingPreferencesSignal(
             autoConnectAudioOn = true,
             autoTurnOnCameraOn = false,
@@ -784,6 +830,7 @@ object DataRepository {
         persistRuntimeChatThreadStates()
         persistRuntimeJoinHistorySignal()
         persistRuntimeMeetingActions()
+        persistRuntimeClipboardActions()
         persistMeetingPreferencesSignal()
         persistProfileSignal()
         persistRuntimeMeta()
@@ -993,6 +1040,14 @@ object DataRepository {
         )
     }
 
+    private fun persistRuntimeClipboardActions() {
+        persistJson(
+            file = runtimeClipboardActionFile(),
+            payload = runtimeClipboardActions,
+            label = RuntimeSignalFileNames.RUNTIME_CLIPBOARD_ACTIONS
+        )
+    }
+
     private fun persistProfileSignal() {
         persistJson(
             file = runtimeProfileStateFile(),
@@ -1117,6 +1172,10 @@ object DataRepository {
 
     private fun runtimeMeetingActionFile(): File {
         return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_MEETING_ACTIONS)
+    }
+
+    private fun runtimeClipboardActionFile(): File {
+        return File(appContext.filesDir, RuntimeSignalFileNames.RUNTIME_CLIPBOARD_ACTIONS)
     }
 
     private fun runtimeProfileStateFile(): File {

@@ -126,6 +126,8 @@ fun MeetingDetailedScreen(
         var microphoneOn by remember(initialConfig) { mutableStateOf(initialConfig.microphoneOn) }
         var cameraOn by remember(initialConfig) { mutableStateOf(initialConfig.cameraOn) }
         var selectedAudioOption by remember(initialConfig) { mutableStateOf(initialConfig.audioOption) }
+        var screenSharingEnabled by remember(initialConfig) { mutableStateOf(initialConfig.screenSharingEnabled) }
+        var screenSharingPaused by remember(initialConfig) { mutableStateOf(false) }
         var showAudioMenu by remember { mutableStateOf(false) }
         fun recordMediaStateChange(
             updatedMicrophoneOn: Boolean = microphoneOn,
@@ -309,11 +311,19 @@ fun MeetingDetailedScreen(
 
             when (activeMeetingMorePage) {
                 MeetingMorePage.SHARE -> MeetingShareOverlay(
+                    screenSharingEnabled = screenSharingEnabled,
+                    sharePaused = screenSharingPaused,
                     onDismiss = { activeMeetingMorePage = null },
                     onShareScreenChanged = { enabled ->
-                        DataRepository.setCurrentMeetingScreenShareEnabled(enabled)
+                        screenSharingEnabled = enabled
+                        screenSharingPaused = false
+                        DataRepository.setCurrentMeetingScreenShareEnabled(
+                            enabled = enabled,
+                            note = if (enabled) "Screen share started from meeting" else "Screen share stopped from meeting"
+                        )
                     },
                     onPauseShare = {
+                        screenSharingPaused = true
                         DataRepository.recordMeetingAction(
                             actionType = MeetingActionTypes.SCREEN_SHARE_PAUSED,
                             meetingId = meetingId,
@@ -321,6 +331,7 @@ fun MeetingDetailedScreen(
                         )
                     },
                     onResumeShare = {
+                        screenSharingPaused = false
                         DataRepository.recordMeetingAction(
                             actionType = MeetingActionTypes.SCREEN_SHARE_RESUMED,
                             meetingId = meetingId,

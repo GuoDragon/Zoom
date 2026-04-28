@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -119,6 +121,7 @@ fun DirectChatScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
+        contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         containerColor = Color(0xFFF5F7FA)
     ) { padding ->
         Column(
@@ -139,53 +142,59 @@ fun DirectChatScreen(
                 }
             }
 
-            QuickMessageRow(
-                messages = quickMessages,
-                onMessageClick = ::sendMessageContent
-            )
-
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .imePadding()
             ) {
-                TextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(inputFocusRequester),
-                    placeholder = { Text("Message") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF2F4F7),
-                        unfocusedContainerColor = Color(0xFFF2F4F7),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
+                QuickMessageRow(
+                    messages = quickMessages,
+                    onMessageClick = ::sendMessageContent
                 )
-                Box(
+
+                Row(
                     modifier = Modifier
-                        .padding(start = 10.dp)
-                        .width(76.dp)
-                        .height(48.dp)
-                        .background(
-                            color = if (inputText.isBlank()) Color(0xFFE5E7EB) else ZoomBlue,
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .clickable(enabled = inputText.isNotBlank()) {
-                            sendMessageContent(inputText)
-                        },
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Send",
-                        color = if (inputText.isBlank()) Color(0xFF94A3B8) else Color.White,
-                        fontWeight = FontWeight.SemiBold
+                    TextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(inputFocusRequester),
+                        placeholder = { Text("Message") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFFF2F4F7),
+                            unfocusedContainerColor = Color(0xFFF2F4F7),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
                     )
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 10.dp)
+                            .width(76.dp)
+                            .height(48.dp)
+                            .background(
+                                color = if (inputText.isBlank()) Color(0xFFE5E7EB) else ZoomBlue,
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .clickable(enabled = inputText.isNotBlank()) {
+                                sendMessageContent(inputText)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Send",
+                            color = if (inputText.isBlank()) Color(0xFF94A3B8) else Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }

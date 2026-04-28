@@ -1,6 +1,7 @@
 package com.example.zoom.presentation.search.detail.meetingdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,7 +50,8 @@ import com.example.zoom.ui.theme.ZoomBlue
 @Composable
 fun SearchMeetingDetailScreen(
     meetingId: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onMeetingCancelled: () -> Unit
 ) {
     var uiState by remember { mutableStateOf<SearchMeetingDetailUiState?>(null) }
 
@@ -60,9 +62,10 @@ fun SearchMeetingDetailScreen(
             }
         }
     }
+    val presenter = remember(view, meetingId) { SearchMeetingDetailPresenter(view, meetingId) }
 
     LaunchedEffect(Unit) {
-        SearchMeetingDetailPresenter(view, meetingId).loadData()
+        presenter.loadData()
     }
 
     uiState?.let { state ->
@@ -117,6 +120,28 @@ fun SearchMeetingDetailScreen(
                 items(state.participants) { participant ->
                     ParticipantRow(participant)
                     HorizontalDivider(color = Color(0xFFF1F3F6))
+                }
+
+                if (state.canCancel) {
+                    item {
+                        Text(
+                            text = "Cancel meeting",
+                            color = Color(0xFFD94C45),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .padding(vertical = 16.dp)
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFF1F0), RoundedCornerShape(12.dp))
+                                .clickable {
+                                    if (presenter.cancelMeeting()) {
+                                        onMeetingCancelled()
+                                    }
+                                }
+                                .padding(vertical = 14.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
 
                 item { Spacer(modifier = Modifier.height(16.dp)) }
